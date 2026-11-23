@@ -25,7 +25,13 @@ profile_overrides:
   hq_country: DE
 # profile_file: ./profil.yaml    # optional: manuell gepflegte Stammdaten
 
-# LLM wird ausschliesslich ueber Umgebungsvariablen konfiguriert:
+# LLM wird ausschliesslich ueber Umgebungsvariablen konfiguriert (nie Klartext hier eintragen):
 #   FOERDERPILOT_LLM_API_KEY   (Pflicht)
 #   FOERDERPILOT_LLM_BASE_URL  (optional, Default: https://api.openai.com/v1)
 #   FOERDERPILOT_LLM_MODEL     (optional, Default: gpt-4o-mini)
+#
+# Beispiel Mistral (Key im Mistral Console erstellen, nur lokal exportieren –
+# nie in Config/.env committen und nie im Chat teilen; bei Leak sofort revoken):
+#   export FOERDERPILOT_LLM_API_KEY=<dein-key>
+#   export FOERDERPILOT_LLM_BASE_URL=https://api.mistral.ai/v1
+#   export FOERDERPILOT_LLM_MODEL=mistral-small-latest   # oder mistral-large-latest

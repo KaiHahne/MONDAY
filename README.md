@@ -74,6 +74,8 @@ Ausgabe in `out/`:
 
 Die Config lehnt Klartext-Secrets ab; nutze `env:VAR_NAME`-Referenzen.
 
+**Mistral** (OpenAI-kompatibles API): `FOERDERPILOT_LLM_BASE_URL=https://api.mistral.ai/v1` und z. B. `FOERDERPILOT_LLM_MODEL=mistral-small-latest`. Key nur lokal exportieren – nie committen, nie im Chat teilen; bei Leak sofort im [Mistral Console](https://console.mistral.ai/) revoken.
+
 ## Entwicklung
 
 ```bash

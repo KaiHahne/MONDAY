@@ -35,6 +35,10 @@ max_applications: 5              # soviele Antraege sollen erstellt werden
 profile_overrides:
   hq_country: DE
 # profile_file: ./profil.yaml    # optional: manuell gepflegte Stammdaten
+
+# LLM nur aus der Umgebung (nie Klartext):
+#   FOERDERPILOT_LLM_API_KEY (Pflicht), FOERDERPILOT_LLM_BASE_URL, FOERDERPILOT_LLM_MODEL
+# Mistral: BASE_URL=https://api.mistral.ai/v1, MODEL=mistral-small-latest
 """
 
 EXAMPLE_PROGRAM = """{

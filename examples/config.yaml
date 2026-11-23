@@ -12,6 +12,10 @@ output_dir: ./out                # examples/out
 sample_rows: 5
 max_applications: 5
 
-# LLM kommt ausschliesslich aus der Umgebung:
-#   export FOERDERPILOT_LLM_API_KEY=...
+# LLM kommt ausschliesslich aus der Umgebung (nie Klartext in Dateien/Chat):
+#   export FOERDERPILOT_LLM_API_KEY=<dein-key>
 #   optional FOERDERPILOT_LLM_BASE_URL / FOERDERPILOT_LLM_MODEL
+#
+# Mistral-kompatibel (https://console.mistral.ai -> API Keys):
+#   export FOERDERPILOT_LLM_BASE_URL=https://api.mistral.ai/v1
+#   export FOERDERPILOT_LLM_MODEL=mistral-small-latest
