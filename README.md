@@ -64,6 +64,19 @@ Ausgabe in `out/`:
 - `applications/<programm-id>.md` – fertige Antragsentwürfe (LLM)
 - `applications.json`, `trace.json` – Übersicht + Audit-Trace
 
+## Web-UI (auch mobil, z. B. iPhone/Safari)
+
+```bash
+export FOERDERPILOT_WEB_TOKEN=<zufaelliges-token>   # Pflicht, nie committen
+foerderpilot serve --config examples/config.yaml   # Default: http://127.0.0.1:8000
+```
+
+- **Default nur Loopback** (`127.0.0.1`). Auf dem eigenen Server im internen Netz: `--host 0.0.0.0` (oder `FOERDERPILOT_WEB_HOST`/`FOERDERPILOT_WEB_PORT`) – dann nur mit Token und idealerweise nur per VPN/intern erreichbar halten.
+- Alle Endpunkte (`/`, `/api/*`) verlangen `Authorization: Bearer $FOERDERPILOT_WEB_TOKEN`; ohne Token startet der Server nicht. Das Token wird per `hmac.compare_digest` geprüft.
+- UI: Pipeline per Button starten (`POST /api/run`, laeuft im Hintergrund-Thread, ein Lauf gleichzeitig), Live-Status + Trace (`/api/status`), Matches (`/api/matches`), Antragsentwuerfe (`/api/applications`, `/api/applications/<id>`).
+- Der LLM-Key kommt serverseitig wie gehabt aus `FOERDERPILOT_LLM_API_KEY` – das iPhone braucht nur das Web-Token.
+- Reiner Python-Standardserver (`http.server`), keine zusaetzlichen Dependencies.
+
 ## LLM-Konfiguration (nur zur Laufzeit, nie im Repo)
 
 | Umgebungsvariable | Bedeutung |

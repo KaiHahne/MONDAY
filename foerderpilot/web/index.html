@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>foerderpilot</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 1rem; background: #0f172a; color: #e2e8f0; }
+  h1 { font-size: 1.4rem; margin: 0 0 .75rem; }
+  h2 { font-size: 1.05rem; margin: 1.2rem 0 .4rem; color: #93c5fd; }
+  button { font-size: 1rem; padding: .6rem 1rem; border: 0; border-radius: .5rem; background: #2563eb; color: #fff; }
+  button:disabled { background: #475569; }
+  input { font-size: 1rem; padding: .6rem; border-radius: .5rem; border: 1px solid #475569; background: #1e293b; color: #e2e8f0; width: 100%; box-sizing: border-box; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  td, th { border-bottom: 1px solid #334155; padding: .35rem .4rem; text-align: left; vertical-align: top; }
+  .ok { color: #4ade80; } .bad { color: #f87171; } .muted { color: #94a3b8; }
+  pre { background: #1e293b; padding: .8rem; border-radius: .5rem; overflow-x: auto; font-size: .8rem; white-space: pre-wrap; }
+  .card { background: #1e293b; border-radius: .6rem; padding: .8rem; margin-bottom: .8rem; }
+  #auth { max-width: 22rem; }
+  ul#trace { font-size: .75rem; color: #94a3b8; padding-left: 1.1rem; }
+  .appbtn { background: #0e7490; margin: .15rem .3rem .15rem 0; font-size: .85rem; padding: .45rem .7rem; }
+</style>
+</head>
+<body>
+<h1>foerderpilot</h1>
+<div id="auth" class="card">
+  <p class="muted">Bearer-Token (FOERDERPILOT_WEB_TOKEN) eingeben:</p>
+  <input id="token" type="password" placeholder="Token">
+  <p><button onclick="saveToken()">Verbinden</button></p>
+  <p id="authErr" class="bad"></p>
+</div>
+<div id="app" hidden>
+  <div class="card">
+    <button id="runBtn" onclick="startRun()">Pipeline starten</button>
+    <span id="status" class="muted"></span>
+  </div>
+  <h2>Matches</h2>
+  <table id="matches"><thead><tr><th>Programm</th><th>eligible</th><th>Score</th><th>fehlgeschlagen</th></tr></thead><tbody></tbody></table>
+  <h2>Antragsentwuerfe</h2>
+  <div id="apps"></div>
+  <pre id="doc" hidden></pre>
+  <h2>Trace</h2>
+  <ul id="trace"></ul>
+</div>
+<script>
+let token = sessionStorage.getItem('fp_token') || '';
+if (token) { document.getElementById('auth').hidden = true; document.getElementById('app').hidden = false; refresh(); }
+function saveToken() {
+  token = document.getElementById('token').value.trim();
+  sessionStorage.setItem('fp_token', token);
+  document.getElementById('auth').hidden = true; document.getElementById('app').hidden = false;
+  refresh();
+}
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) } });
+  if (r.status === 401) { sessionStorage.removeItem('fp_token'); token = ''; document.getElementById('app').hidden = true; document.getElementById('auth').hidden = false; throw new Error('401'); }
+  return r;
+}
+async function startRun() {
+  document.getElementById('runBtn').disabled = true;
+  const r = await api('/api/run', { method: 'POST' });
+  if (r.status === 409) { document.getElementById('status').textContent = 'laeuft bereits…'; }
+  document.getElementById('runBtn').disabled = false;
+  refresh();
+}
+async function refresh() {
+  try {
+    const s = await (await api('/api/status')).json();
+    const j = s.job;
+    document.getElementById('status').textContent = j ? ('Status: ' + j.status + (j.error ? ' – ' + j.error : '')) : 'kein Lauf gestartet';
+    if (j && j.trace) { document.getElementById('trace').innerHTML = j.trace.map(e => '<li>' + e.agent + ': ' + e.action + ' – ' + e.detail + '</li>').join(''); }
+    if (j && j.status === 'done') { loadMatches(); loadApps(); }
+    if (!j || j.status !== 'running') setTimeout(refresh, 4000);
+  } catch (e) { /* 401 behandelt oben */ }
+  if (document.getElementById('status').textContent.includes('running')) setTimeout(refresh, 1500);
+}
+async function loadMatches() {
+  const r = await api('/api/matches');
+  if (!r.ok) return;
+  const ms = await r.json();
+  document.querySelector('#matches tbody').innerHTML = ms.map(m =>
+    '<tr><td>' + m.program.id + '<br><span class="muted">' + m.program.name + '</span></td><td class="' + (m.eligible ? 'ok' : 'bad') + '">' + m.eligible + '</td><td>' + m.score + '</td><td>' + m.failed.length + '</td></tr>').join('');
+}
+async function loadApps() {
+  const r = await api('/api/applications');
+  if (!r.ok) return;
+  const apps = await r.json();
+  document.getElementById('apps').innerHTML = apps.map(a =>
+    '<button class="appbtn" onclick="loadDoc(\'' + a.program_id + '\')">' + a.program_id + ' (Score ' + a.score + ')</button>').join('') || '<span class="muted">keine Antraege</span>';
+}
+async function loadDoc(id) {
+  const r = await api('/api/applications/' + encodeURIComponent(id));
+  const doc = document.getElementById('doc');
+  doc.hidden = false;
+  doc.textContent = r.ok ? await r.text() : 'Fehler: ' + r.status;
+}
+</script>
+</body>
+</html>

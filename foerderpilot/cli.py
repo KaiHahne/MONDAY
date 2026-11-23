@@ -93,6 +93,17 @@ def _cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    import os
+
+    from foerderpilot.web.server import DEFAULT_HOST, DEFAULT_PORT, serve
+
+    host = args.host or os.environ.get("FOERDERPILOT_WEB_HOST", DEFAULT_HOST)
+    port = args.port or int(os.environ.get("FOERDERPILOT_WEB_PORT", DEFAULT_PORT))
+    serve(args.config, host=host, port=port)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="foerderpilot",
@@ -102,6 +113,14 @@ def main(argv: list[str] | None = None) -> int:
     run_p = sub.add_parser("run", help="Pipeline ausfuehren (braucht FOERDERPILOT_LLM_API_KEY in der Umgebung)")
     run_p.add_argument("--config", default="config.yaml", help="Pfad zur YAML-Config (Default: config.yaml)")
     run_p.set_defaults(func=_cmd_run)
+    serve_p = sub.add_parser(
+        "serve",
+        help="Web-UI starten (Default nur 127.0.0.1; braucht FOERDERPILOT_WEB_TOKEN als Bearer-Token)",
+    )
+    serve_p.add_argument("--config", default="config.yaml", help="Pfad zur YAML-Config (Default: config.yaml)")
+    serve_p.add_argument("--host", default=None, help="Bind-Adresse (Default: 127.0.0.1 bzw. FOERDERPILOT_WEB_HOST)")
+    serve_p.add_argument("--port", type=int, default=None, help="Port (Default: 8000 bzw. FOERDERPILOT_WEB_PORT)")
+    serve_p.set_defaults(func=_cmd_serve)
     init_p = sub.add_parser("init", help="Beispiel-Config und Beispiel-Programm anlegen")
     init_p.add_argument("--dir", default=".", help="Zielverzeichnis (Default: aktuelles Verzeichnis)")
     init_p.set_defaults(func=_cmd_init)
