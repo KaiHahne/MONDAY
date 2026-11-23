@@ -1,0 +1,8 @@
+[
+  {"kennzahl": "investitionsbetrag", "wert": "150000"},
+  {"kennzahl": "vorhaben", "wert": "Digitalisierung der Fertigungslinie (KI-gestuetzte Qualitaetspruefung)"},
+  {"kennzahl": "energieverbrauch", "wert": 850000},
+  {"kennzahl": "co2", "wert": "1200"},
+  {"kennzahl": "fue_anteil", "wert": "0.08"},
+  {"kennzahl": "exportanteil", "wert": "0.35"}
+]

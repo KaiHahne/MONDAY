@@ -14,5 +14,6 @@ def test_config_accepts_env_reference(tmp_path):
     cfg = tmp_path / "config.yaml"
     cfg.write_text("connectors:\n  - type: sql\n    url: env:MY_URL\n", encoding="utf-8")
     config = load_config(cfg)
-    assert config["output_dir"] == "out"
+    assert config["output_dir"] == str(tmp_path / "out")
+    assert config["programs_dir"] == str(tmp_path / "programs")
     assert config["connectors"][0]["url"] == "env:MY_URL"

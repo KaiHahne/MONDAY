@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +33,22 @@ def load_config(path: str | Path) -> dict[str, Any]:
     config = dict(DEFAULTS)
     config.update(data)
     config["_config_path"] = str(p)
+    base = p.resolve().parent
+    for key in ("programs_dir", "output_dir"):
+        config[key] = _resolve_rel(config[key], base)
+    if config.get("profile_file"):
+        config["profile_file"] = _resolve_rel(config["profile_file"], base)
+    for conn in config.get("connectors", []):
+        if isinstance(conn, dict) and "root" in conn:
+            conn["root"] = _resolve_rel(conn["root"], base)
     return config
+
+
+def _resolve_rel(value: Any, base: Path) -> Any:
+    """Relative Pfade in der Config werden gegen das Config-Verzeichnis aufgeloest."""
+    if isinstance(value, str) and value and not os.path.isabs(value) and not value.startswith("env:"):
+        return str(base / value)
+    return value
 
 
 _SECRET_KEY_HINTS = ("key", "secret", "token", "password", "credential")

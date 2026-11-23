@@ -52,6 +52,10 @@ export FOERDERPILOT_LLM_API_KEY=...   # nie commiten!
 foerderpilot run --config config.yaml
 ```
 
+**Lauffaehiges Beispiel** (Data-Lake-Layout + Config + erklaerte Stammdaten): siehe [`examples/`](examples/README.md) – Start mit `foerderpilot run --config examples/config.yaml`.
+
+Relative Pfade in der Config (`root`, `programs_dir`, `output_dir`, `profile_file`) werden gegen das Verzeichnis der Config-Datei aufgeloest.
+
 Ausgabe in `out/`:
 
 - `catalog.json` – alle gefundenen Datasets inkl. Schema-Probe

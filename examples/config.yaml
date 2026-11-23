@@ -1,0 +1,17 @@
+# Beispiel-Config: laeuft direkt aus dem Repo mit
+#   foerderpilot run --config examples/config.yaml
+# Relative Pfade werden gegen das Verzeichnis dieser Datei aufgeloest.
+
+connectors:
+  - type: local
+    name: lake_beispiel
+    root: ./data_lake            # examples/data_lake
+
+programs_dir: ../programs        # die Beispiel-Regeln (BAFA, KfW, ZIM)
+output_dir: ./out                # examples/out
+sample_rows: 5
+max_applications: 5
+
+# LLM kommt ausschliesslich aus der Umgebung:
+#   export FOERDERPILOT_LLM_API_KEY=...
+#   optional FOERDERPILOT_LLM_BASE_URL / FOERDERPILOT_LLM_MODEL
