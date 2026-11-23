@@ -1,0 +1,31 @@
+# foerderpilot Konfiguration
+# Secrets NIE in Klartext eintragen – immer als env:VAR_NAME referenzieren.
+
+connectors:
+  - type: local
+    name: lake_lokal
+    root: ./data_lake            # Parquet/CSV/JSON/JSONL
+  # - type: sql
+  #   name: lake_sql
+  #   url: env:FOERDERPILOT_DB_URL
+  # - type: s3
+  #   name: lake_s3
+  #   bucket: mein-data-lake
+  #   prefix: unternehmen/stammdaten
+  #   endpoint_url: https://s3.eu-central-1.amazonaws.com   # optional, z. B. MinIO
+  #   region: eu-central-1
+
+programs_dir: ./programs         # JSON/YAML mit Foerderprogramm-Regeln
+output_dir: ./out
+sample_rows: 5                   # Zeilen-Probe pro Dataset fuer Katalog/Profil
+max_applications: 5              # soviele Antraege sollen erstellt werden
+
+# Profil-Felder, die im Data Lake nicht (vollstaendig) vorhanden sind:
+profile_overrides:
+  hq_country: DE
+# profile_file: ./profil.yaml    # optional: manuell gepflegte Stammdaten
+
+# LLM wird ausschliesslich ueber Umgebungsvariablen konfiguriert:
+#   FOERDERPILOT_LLM_API_KEY   (Pflicht)
+#   FOERDERPILOT_LLM_BASE_URL  (optional, Default: https://api.openai.com/v1)
+#   FOERDERPILOT_LLM_MODEL     (optional, Default: gpt-4o-mini)

@@ -1,0 +1,18 @@
+{
+  "id": "bmwk-zim",
+  "name": "ZIM – Zentrales Innovationsprogramm Mittelstand (BMWK)",
+  "provider": "Bundesministerium fuer Wirtschaft und Klimaschutz (BMWK)",
+  "description": "Zuschuss fuer Forschungs- und Entwicklungsprojekte von KMU (z. B. Einzelprojekte).",
+  "url": "https://www.zim.de/DE/Foerderung/ZIM/Foerderung_node.html",
+  "region": ["DE"],
+  "purposes": ["research_development", "innovation"],
+  "criteria": [
+    {"field": "hq_country", "op": "in", "value": ["DE"], "required": true, "weight": 2},
+    {"field": "employees", "op": "<", "value": 250, "required": true, "weight": 2},
+    {"field": "rd_share", "op": ">=", "value": 0.05, "required": false, "weight": 2},
+    {"field": "purpose", "op": "exists", "value": null, "required": true, "weight": 1}
+  ],
+  "funding": {"type": "grant", "max_rate": 0.55, "max_amount_eur": 550000},
+  "required_documents": ["Antragsformular (online)", "Projektbeschreibung", "Kooperationsvertrag bei Verbund", "Finanzierungsplan"],
+  "deadline": null
+}

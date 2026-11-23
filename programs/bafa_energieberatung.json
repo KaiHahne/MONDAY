@@ -1,0 +1,18 @@
+{
+  "id": "bafa-energieberatung-mittelstand",
+  "name": "BAFA Energieberatung im Mittelstand (EBM)",
+  "provider": "Bundesamt fuer Wirtschaft und Ausfuhrkontrolle (BAFA)",
+  "description": "Zuschuss zur Energieberatung fuer KMU zur Identifikation von Energieeinsparpotenzialen.",
+  "url": "https://www.bafa.de/DE/Energie/Energieberatung_Mittelstand/energieberatung_mittelstand_node.html",
+  "region": ["DE"],
+  "purposes": ["energy_efficiency", "consulting"],
+  "criteria": [
+    {"field": "hq_country", "op": "in", "value": ["DE"], "required": true, "weight": 2},
+    {"field": "employees", "op": "<", "value": 250, "required": true, "weight": 2},
+    {"field": "revenue_eur", "op": "<=", "value": 50000000, "required": true, "weight": 1},
+    {"field": "energy_consumption_kwh", "op": ">=", "value": 10000, "required": false, "weight": 2}
+  ],
+  "funding": {"type": "grant", "max_rate": 0.8, "max_amount_eur": 6000},
+  "required_documents": ["Antragsformular", "Energieberatung durch zertifizierten Berater", "KMU-Erklaerung"],
+  "deadline": null
+}

@@ -1,0 +1,18 @@
+{
+  "id": "kfw-erp-digitalisierung-521",
+  "name": "KfW ERP-Digitalisierungs- und Innovationskredit (Programm 521/522)",
+  "provider": "KfW Bankengruppe",
+  "description": "Kredit mit Tilgungszuschuss fuer Digitalisierungs- und Innovationsvorhaben von KMU.",
+  "url": "https://www.kfw.de/DE/Privat/KfW-Foerderprogramme/ERP-Digitalisierungs-und-Innovationskredit/index.html",
+  "region": ["DE"],
+  "purposes": ["digitalization", "innovation"],
+  "criteria": [
+    {"field": "hq_country", "op": "in", "value": ["DE"], "required": true, "weight": 2},
+    {"field": "employees", "op": "<=", "value": 500, "required": true, "weight": 2},
+    {"field": "investment_amount_eur", "op": ">=", "value": 10000, "required": true, "weight": 3},
+    {"field": "purpose", "op": "contains", "value": "digital", "required": true, "weight": 3}
+  ],
+  "funding": {"type": "loan_with_repayment_grant", "max_amount_eur": 25000000, "tilgungszuschuss_rate": 0.05},
+  "required_documents": ["Antrag ueber Hausbank", "Projektbeschreibung", "Investitions- und Finanzierungsplan", "KMU-Erklaerung"],
+  "deadline": null
+}

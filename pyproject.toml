@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foerderpilot"
+version = "0.1.0"
+description = "Multi-Agent-System, das Data Lakes eines Unternehmens durchsucht, passende Foerderprogramme matcht und Foerderantraege entwirft."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "pandas>=2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+sql = ["SQLAlchemy>=2.0"]
+s3 = ["boto3>=1.28"]
+parquet = ["pyarrow>=12.0"]
+all = [
+    "SQLAlchemy>=2.0",
+    "boto3>=1.28",
+    "pyarrow>=12.0",
+]
+test = ["pytest>=7.4"]
+
+[project.scripts]
+foerderpilot = "foerderpilot.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["foerderpilot*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
