@@ -1,0 +1,3 @@
+id,titel,zuwendungsgeber,beschreibung,webseite,foerderart,max_foerdersatz,max_förderbetrag,frist,kriterien,erforderliche_unterlagen
+"DEMO-1","Demo: Digitalisierungszuschuss KMU","Beispiel-Behoerde","Zuschuss fuer Digitalisierungsvorhaben","https://example.org/demo1",Zuschuss,0.5,100000,,"hq_country in [DE]; employees<=250 | weight=2; investment_amount_eur>=10000 | weight=3; purpose contains digital | required=false | weight=2","Projektbeschreibung; Kostenplan; Handelsregisterauszug"
+"DEMO-2","Demo: Energieberatung","Beispiel-Amt","Energieberatung fuer KMU","https://example.org/demo2",Zuschuss,80%,6000,31.12.2026,"hq_country in [DE]; employees<250 | weight=2; energy_consumption_kwh>=10000 | required=false","Antragsformular; KMU-Erklaerung"

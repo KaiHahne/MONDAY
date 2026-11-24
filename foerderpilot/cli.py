@@ -93,6 +93,25 @@ def _cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_import(args: argparse.Namespace) -> int:
+    from foerderpilot.programs.importer import import_programs
+
+    report = import_programs(args.input, args.out, args.mapping, force=args.force, dry_run=args.dry_run)
+    print(
+        json.dumps(
+            {
+                "written": report.written,
+                "skipped": report.skipped,
+                "errors": report.errors,
+                "dry_run": report.dry_run,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0 if not report.errors else 1
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     import os
 
@@ -124,6 +143,16 @@ def main(argv: list[str] | None = None) -> int:
     init_p = sub.add_parser("init", help="Beispiel-Config und Beispiel-Programm anlegen")
     init_p.add_argument("--dir", default=".", help="Zielverzeichnis (Default: aktuelles Verzeichnis)")
     init_p.set_defaults(func=_cmd_init)
+    imp_p = sub.add_parser(
+        "import-programs",
+        help="Foerderprogramm-Export (CSV/JSON) in programs/<id>.json-Regeln importieren",
+    )
+    imp_p.add_argument("--input", required=True, help="Export-Datei (.csv oder .json)")
+    imp_p.add_argument("--out", default="programs", help="Zielverzeichnis (Default: programs)")
+    imp_p.add_argument("--mapping", default=None, help="optionale YAML mit Spaltenmapping (siehe examples/import_mapping.example.yaml)")
+    imp_p.add_argument("--force", action="store_true", help="bestehende Programm-Dateien ueberschreiben")
+    imp_p.add_argument("--dry-run", action="store_true", help="nur pruefen/melden, nichts schreiben")
+    imp_p.set_defaults(func=_cmd_import)
     args = parser.parse_args(argv)
     return args.func(args)
 

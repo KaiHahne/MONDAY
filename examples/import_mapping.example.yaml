@@ -1,0 +1,10 @@
+# Optionales Spaltenmapping fuer 'foerderpilot import-programs --mapping ...'
+# Falls dein Export andere Spaltennamen hat, hier ziel: [moegliche quellspalten] hinterlegen.
+# Ohne Mapping greifen die eingebauten DE/EN-Aliase (siehe foerderpilot/programs/importer.py).
+columns:
+  id: [foerderkennziffer, programm_id]
+  name: [titel, programmname]
+  provider: [zuwendungsgeber, behoerde]
+  criteria: [voraussetzungen, kriterien]
+  funding_max_rate: [foerderquote]
+  funding_max_amount_eur: [max_förderbetrag]

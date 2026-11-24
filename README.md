@@ -42,6 +42,23 @@ Programme sind maschinenlesbare JSON/YAML-Definitionen (siehe `programs/`):
 Operatoren: `==`, `!=`, `>=`, `<=`, `>`, `<`, `in`, `not_in`, `contains`, `exists`.
 `field` bezieht sich auf das extrahierte Profil (z. B. `employees`, `revenue_eur`, `hq_country`, `hq_state`, `industry`, `investment_amount_eur`, `purpose`, ... – siehe `foerderpilot/profile.py` für alle Aliase).
 
+### Förderprogramme aus einem Export importieren
+
+```bash
+foerderpilot import-programs --input foerderdatenbank_export.csv --out programs/
+# optional: --mapping mein_spaltenmapping.yaml  --force  --dry-run
+```
+
+Konvertiert CSV/JSON-Exporte (z. B. aus Förderdatenbanken) in einzelne `programs/<id>.json`-Regeln. Erkannt werden DE/EN-Standardspalten (`id`, `titel`, `zuwendungsgeber`, `foerderart`, `max_foedersatz` (auch `80%`), `max_förderbetrag`, `frist`, `kriterien`, `erforderliche_unterlagen`, ...); eigenes Mapping siehe [`examples/import_mapping.example.yaml`](examples/import_mapping.example.yaml). Beispiel-Export: [`examples/foerderdatenbank_export.csv`](examples/foerderdatenbank_export.csv).
+
+**Kriterien-Syntax** in der Spalte `kriterien` – getrennt durch `;` oder Zeilenumbruch:
+
+```
+hq_country in [DE, BY]; employees<=250 | weight=2; purpose contains digital | required=false | weight=3
+```
+
+`field op value` mit Operatoren wie oben; `value` als JSON/Zahl/Liste (`[DE, BY]`) oder Text; Modifikatoren `| required=false` und `| weight=N` optional. Zeilen mit Fehlern werden gemeldet (mit Zeilennummer), ohne den Rest des Imports abzubrechen.
+
 ## Nutzung
 
 ```bash
