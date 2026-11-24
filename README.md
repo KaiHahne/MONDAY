@@ -112,3 +112,5 @@ Die Config lehnt Klartext-Secrets ab; nutze `env:VAR_NAME`-Referenzen.
 pip install -e ".[all,test]"
 pytest
 ```
+
+Interne Entwickler-Doku (Architektur, Erweiterungspunkte, Test-Konventionen): [docs/ENTWICKLER.md](docs/ENTWICKLER.md).
