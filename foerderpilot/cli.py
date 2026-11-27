@@ -112,6 +112,32 @@ def _cmd_import(args: argparse.Namespace) -> int:
     return 0 if not report.errors else 1
 
 
+def _cmd_research(args: argparse.Namespace) -> int:
+    from foerderpilot.config import load_config
+    from foerderpilot.llm.client import OpenAICompatibleClient
+    from foerderpilot.pipeline import run_pipeline
+    from foerderpilot.research import build_backend, research_programs
+
+    config = load_config(args.config)
+    llm = OpenAICompatibleClient.from_env()
+    profile = {}
+    if args.use_lake_profile:
+        result = run_pipeline(config, llm_client=llm)
+        profile = result.context.profile
+    levels = [l.strip() for l in args.levels.split(",")] if args.levels else None
+    report = research_programs(
+        config,
+        llm=llm,
+        search_backend=build_backend(config),
+        out_dir=args.out,
+        levels=levels,
+        max_per_level=args.max_per_level,
+        profile=profile,
+    )
+    print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+    return 0 if not report.errors else 1
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     import os
 
@@ -153,6 +179,16 @@ def main(argv: list[str] | None = None) -> int:
     imp_p.add_argument("--force", action="store_true", help="bestehende Programm-Dateien ueberschreiben")
     imp_p.add_argument("--dry-run", action="store_true", help="nur pruefen/melden, nichts schreiben")
     imp_p.set_defaults(func=_cmd_import)
+    res_p = sub.add_parser(
+        "research",
+        help="Foerderprogramme pro Verwaltungsebene recherchieren (EU/Bund/Land/Gemeinde) -> Drafts in programs/research/",
+    )
+    res_p.add_argument("--config", default="config.yaml", help="Pfad zur YAML-Config (Default: config.yaml)")
+    res_p.add_argument("--levels", default=None, help="kommagetrennt, z. B. 'eu,bund,land' (Default: alle vier Ebenen)")
+    res_p.add_argument("--max-per-level", type=int, default=5, help="max. Drafts pro Ebene (Default: 5)")
+    res_p.add_argument("--out", default="programs/research", help="Zielverzeichnis fuer Drafts (Default: programs/research)")
+    res_p.add_argument("--use-lake-profile", action="store_true", help="vorher Pipeline laufen lassen und Profil aus dem Data Lake fuer die Such-Queries nutzen")
+    res_p.set_defaults(func=_cmd_research)
     args = parser.parse_args(argv)
     return args.func(args)
 

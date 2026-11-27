@@ -7,7 +7,9 @@ from typing import Any
 from foerderpilot.agents import (
     AgentContext,
     ApplicationWriterAgent,
+    ClarificationAgent,
     DataLakeExplorerAgent,
+    GapAnalysisAgent,
     ProgramMatcherAgent,
 )
 from foerderpilot.llm.client import LLMClient, OpenAICompatibleClient
@@ -41,15 +43,27 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
     if llm_client is None:
         llm_client = OpenAICompatibleClient.from_env()
 
-    agents = [
+    clarification_cfg = config.get("clarification") or {}
+    agents: list = [
         DataLakeExplorerAgent(),
         ProgramMatcherAgent(),
+        GapAnalysisAgent(),
+    ]
+    if clarification_cfg.get("enabled", True):
+        agents.append(
+            ClarificationAgent(
+                llm=llm_client,
+                output_dir=output_dir,
+                max_emails=int(clarification_cfg.get("max_emails", 3)),
+            )
+        )
+    agents.append(
         ApplicationWriterAgent(
             llm=llm_client,
             output_dir=output_dir,
             max_applications=int(config.get("max_applications", 5)),
-        ),
-    ]
+        )
+    )
     context = Orchestrator(agents).run(AgentContext(config))
 
     (output_dir / "catalog.json").write_text(
@@ -64,6 +78,12 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
     )
     (output_dir / "applications.json").write_text(
         json.dumps(context.applications, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (output_dir / "gaps.json").write_text(
+        json.dumps(context.gaps, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+    )
+    (output_dir / "emails.json").write_text(
+        json.dumps(context.emails, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     (output_dir / "trace.json").write_text(
         json.dumps([e.to_dict() for e in context.events], ensure_ascii=False, indent=2), encoding="utf-8"

@@ -46,6 +46,7 @@ class FundingProgram:
     funding: dict[str, Any] = field(default_factory=dict)
     required_documents: list[str] = field(default_factory=list)
     deadline: str | None = None
+    contact: dict[str, Any] = field(default_factory=dict)
 
     def validate(self) -> None:
         if not self.id or not self.name:
@@ -57,6 +58,9 @@ class FundingProgram:
             if key in seen:
                 raise ValueError(f"Doppeltes Kriterium in Programm {self.id!r}: {key}")
             seen.add(key)
+        email = str(self.contact.get("email", ""))
+        if email and "@" not in email:
+            raise ValueError(f"contact.email in Programm {self.id!r} ist keine Adresse: {email!r}")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,4 +84,5 @@ class FundingProgram:
             "funding": self.funding,
             "required_documents": self.required_documents,
             "deadline": self.deadline,
+            "contact": self.contact,
         }

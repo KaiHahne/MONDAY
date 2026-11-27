@@ -14,5 +14,11 @@
   ],
   "funding": {"type": "grant", "max_rate": 0.8, "max_amount_eur": 6000},
   "required_documents": ["Antragsformular", "Energieberatung durch zertifizierten Berater", "KMU-Erklaerung"],
-  "deadline": null
+  "deadline": null,
+  "contact": {
+    "stelle": "BAFA – Referat Energieberatung",
+    "email": "energieberatung@bafa.bund.de",
+    "telefon": null,
+    "url": "https://www.bafa.de/DE/Energie/Energieberatung_Mittelstand/energieberatung_mittelstand_node.html"
+  }
 }

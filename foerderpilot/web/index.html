@@ -38,6 +38,9 @@
   <table id="matches"><thead><tr><th>Programm</th><th>eligible</th><th>Score</th><th>fehlgeschlagen</th></tr></thead><tbody></tbody></table>
   <h2>Antragsentwuerfe</h2>
   <div id="apps"></div>
+  <h2>Luecken &amp; Klaerungs-Mails</h2>
+  <div id="gaps" class="card muted">–</div>
+  <div id="mails"></div>
   <pre id="doc" hidden></pre>
   <h2>Trace</h2>
   <ul id="trace"></ul>
@@ -69,7 +72,7 @@ async function refresh() {
     const j = s.job;
     document.getElementById('status').textContent = j ? ('Status: ' + j.status + (j.error ? ' – ' + j.error : '')) : 'kein Lauf gestartet';
     if (j && j.trace) { document.getElementById('trace').innerHTML = j.trace.map(e => '<li>' + e.agent + ': ' + e.action + ' – ' + e.detail + '</li>').join(''); }
-    if (j && j.status === 'done') { loadMatches(); loadApps(); }
+    if (j && j.status === 'done') { loadMatches(); loadApps(); loadGaps(); loadMails(); }
     if (!j || j.status !== 'running') setTimeout(refresh, 4000);
   } catch (e) { /* 401 behandelt oben */ }
   if (document.getElementById('status').textContent.includes('running')) setTimeout(refresh, 1500);
@@ -92,6 +95,24 @@ async function loadDoc(id) {
   const r = await api('/api/applications/' + encodeURIComponent(id));
   const doc = document.getElementById('doc');
   doc.hidden = false;
+  doc.textContent = r.ok ? await r.text() : 'Fehler: ' + r.status;
+}
+async function loadGaps() {
+  const r = await api('/api/gaps'); if (!r.ok) return; const g = await r.json();
+  const entries = Object.entries(g);
+  document.getElementById('gaps').innerHTML = entries.length
+    ? entries.map(([pid, list]) => '<b>' + pid + '</b> (' + list.length + ' Luecken): ' + list.map(x => x.type + (x.field ? ' – ' + x.field : '')).join('; ')).join('<br>')
+    : 'keine Luecken gefunden';
+}
+async function loadMails() {
+  const r = await api('/api/emails'); if (!r.ok) return; const ms = await r.json();
+  document.getElementById('mails').innerHTML = ms.map(m =>
+    '<button class="appbtn" onclick="loadMail(\'' + m.program_id + '\')">' + m.program_id + ' → ' + m.to + '</button>').join('')
+    || '<span class="muted">keine Mail-Entwuerfe</span>';
+}
+async function loadMail(id) {
+  const r = await api('/api/emails/' + encodeURIComponent(id));
+  const doc = document.getElementById('doc'); doc.hidden = false;
   doc.textContent = r.ok ? await r.text() : 'Fehler: ' + r.status;
 }
 </script>

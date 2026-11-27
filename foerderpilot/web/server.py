@@ -101,6 +101,16 @@ class WebHandler(BaseHTTPRequestHandler):
             return
         self._send_json(json.loads(path.read_text(encoding="utf-8")))
 
+    def _read_out_file(self, subdir: str, raw_id: str, content_type: str) -> None:
+        if not _APP_ID_RE.match(raw_id):
+            self._send_json({"error": "ungueltige ID"}, 400)
+            return
+        target = Path(self.config["output_dir"]) / subdir / f"{raw_id}.md"
+        if not target.exists():
+            self._send_json({"error": "nicht gefunden"}, 404)
+            return
+        self._send(target.read_bytes(), 200, content_type)
+
     def do_GET(self) -> None:  # noqa: N802
         if not self._authorized():
             self._deny()
@@ -114,18 +124,16 @@ class WebHandler(BaseHTTPRequestHandler):
             self._read_out("matches.json")
         elif path == "/api/applications":
             self._read_out("applications.json")
+        elif path == "/api/gaps":
+            self._read_out("gaps.json")
+        elif path == "/api/emails":
+            self._read_out("emails.json")
         elif path == "/api/trace":
             self._read_out("trace.json")
+        elif path.startswith("/api/emails/"):
+            self._read_out_file("emails", path.rsplit("/", 1)[-1], "text/markdown; charset=utf-8")
         elif path.startswith("/api/applications/"):
-            app_id = path.rsplit("/", 1)[-1]
-            if not _APP_ID_RE.match(app_id):
-                self._send_json({"error": "ungueltige Programm-ID"}, 400)
-                return
-            md = Path(self.config["output_dir"]) / "applications" / f"{app_id}.md"
-            if not md.exists():
-                self._send_json({"error": "Antrag nicht gefunden"}, 404)
-                return
-            self._send(md.read_bytes(), 200, "text/markdown; charset=utf-8")
+            self._read_out_file("applications", path.rsplit("/", 1)[-1], "text/markdown; charset=utf-8")
         else:
             self._send_json({"error": "not found"}, 404)
 

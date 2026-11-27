@@ -48,12 +48,13 @@ foerderpilot/
   profile.py              # Profil-Extraktion (FIELD_ALIASES, KV-Tabellen, DE/EN-Zahlen)
   connectors/             # base (Protocol + DatasetRef), local, sql, s3, factory
   programs/
-    models.py             # FundingProgram, Criterion (validate())
+    models.py             # FundingProgram (inkl. contact), Criterion (validate())
     loader.py             # JSON/YAML laden + validieren (ProgramValidationError)
     matcher.py            # OPERATORS, evaluate_criterion, match_program, rank_matches
     importer.py           # CSV/JSON-Export -> programs/<id>.json (import-programs)
+  research/               # backend.py (SearchBackend: static/ddg, fetch_text), agent.py (research_programs -> Drafts)
   llm/client.py           # LLMClient-Protokoll + OpenAICompatibleClient (env-basiert)
-  agents/                 # base, explorer, matcher, writer
+  agents/                 # base, explorer, matcher, gap, clarification, writer
   web/                    # server.py (stdlib http.server, Bearer-Token), index.html (mobil)
 programs/                 # Beispiel-Regeln (BAFA, KfW, ZIM) – vom Nutzer gepflegt
 examples/                 # lauffaehiges Data-Lake-Beispiel + Export-Beispiele
@@ -113,6 +114,15 @@ llm_client=…)` injizieren – so machen es auch die Tests (`FakeLLMClient`). F
 `foerderpilot run` reicht es, `FOERDERPILOT_LLM_BASE_URL`/`FOERDERPILOT_LLM_MODEL` zu setzen
 (jeder OpenAI-kompatible `/chat/completions`-Endpoint, z. B. Mistral, vLLM, Ollama).
 
+### Research-Agent erweitern
+`research/agent.py: research_programs()` läuft pro Ebene (`eu/bund/land/gemeinde`) × Topic:
+Suche (`SearchBackend`) → Seite fetchen (`fetch_text`) → LLM extrahiert Programm-Cards als JSON
+(`extract_program_cards`) → Draft nach `programs/research/<ebene>-<id>.json` mit `status: "draft"`,
+`source_url`, `contact`. Drafts werden NICHT automatisch gematcht – Review + `mv` nach `programs/`.
+Neues Such-Backend: `SearchBackend`-Protokoll in `research/backend.py` implementieren und in
+`build_backend()` registrieren. Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM
+(siehe `tests/test_research.py`).
+
 ### Web-API erweitern
 Neuer Endpunkt = weiterer `elif`-Zweig in `web/server.py: WebHandler.do_GET/do_POST`
 (nach dem Auth-Check!). Programm-IDs/Dateinamen immer gegen Pfad-Traversal härten
@@ -163,6 +173,7 @@ Test-Konventionen:
 | `foerderpilot serve --config C [--host H] [--port P]` | Web-UI (Token-Pflicht, Default 127.0.0.1:8000) |
 | `foerderpilot init --dir D` | Beispiel-Config + Beispiel-Programm anlegen |
 | `foerderpilot import-programs --input E --out programs/ [--mapping M] [--force] [--dry-run]` | Förder-Export → Regeldateien |
+| `foerderpilot research --config C [--levels eu,bund] [--max-per-level 5] [--out programs/research] [--use-lake-profile]` | Programme pro Verwaltungsebene recherchieren → Drafts |
 
 ## 9. Häufige Stolpersteine
 

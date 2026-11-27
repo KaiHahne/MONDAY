@@ -35,3 +35,19 @@ profile_overrides:
 #   export FOERDERPILOT_LLM_API_KEY=<dein-key>
 #   export FOERDERPILOT_LLM_BASE_URL=https://api.mistral.ai/v1
 #   export FOERDERPILOT_LLM_MODEL=mistral-small-latest   # oder mistral-large-latest
+
+# Research (foerderpilot research): Ebenen und Quellen
+# research:
+#   backend: ddg            # ddg = DuckDuckGo-HTML-Websuche, static = research.sources aus dieser Config
+#   levels: [eu, bund, land, gemeinde]
+#   topics: [Digitalisierung, Investition, Energieeffizienz, Forschung]
+#   max_per_level: 5
+#   query_template: "Foerderprogramme {topic} {level} {region} {city} 2026 Unternehmen KMU Kriterien"
+#   sources:                # nur fuer backend: static (Tests/Offline)
+#     - query: "Foerderprogramme Energie"
+#       results: [{title: "BAFA EBM", url: "https://www.bafa.de/...", snippet: "..."}]
+
+# Klaerungs-Mails an recherchierte Ansprechpartner bei Luecken (Default: an, max. 3 Mails)
+# clarification:
+#   enabled: true
+#   max_emails: 3

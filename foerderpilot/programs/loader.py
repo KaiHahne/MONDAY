@@ -39,6 +39,7 @@ def _program_from_dict(data: dict[str, Any], source: str) -> FundingProgram:
             funding=dict(data.get("funding", {})),
             required_documents=list(data.get("required_documents", [])),
             deadline=data.get("deadline"),
+            contact=dict(data.get("contact") or {}),
         )
     except KeyError as exc:
         raise ProgramValidationError(f"{source}: Pflichtfeld fehlt: {exc}") from exc

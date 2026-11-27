@@ -31,7 +31,9 @@ class AgentContext:
         self.profile: dict[str, Any] = {}
         self.programs: list[Any] = []
         self.matches: list[Any] = []
+        self.gaps: dict[str, list[dict[str, Any]]] = {}
         self.applications: list[dict[str, Any]] = []
+        self.emails: list[dict[str, Any]] = []
         self.events: list[AgentEvent] = []
 
     def log(self, agent: str, action: str, detail: str) -> None:

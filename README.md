@@ -11,8 +11,27 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
 |---|---|
 | `DataLakeExplorer` | Erkundet alle konfigurierten Data Lakes, baut den Datenkatalog und destilliert das Unternehmensprofil (Stammdaten- + Kennzahlentabellen, DE/EN-Spalten, Key-Value-Tabellen). |
 | `ProgramMatcher` | Lädt Förderprogramme als JSON/YAML-Regeln (`programs/`) und matcht sie gegen das Profil: Eligibility (alle `required`-Kriterien) + gewichteter Score, absteigend gerankt. |
+| `GapAnalysis` | Ermittelt pro Match Informationslücken: fehlende/fehlgeschlagene Profil-Felder, nicht auffindbare Pflicht-Unterlagen im Lake, fehlender Ansprechpartner (`contact`). |
+| `Clarification` | Formuliert per LLM für eligible Matches mit Lücken eine Klärungs-Mail an die recherchierte Stelle (`contact.email`) → `out/emails/<id>.md` (Entwurf, nicht automatisch gesendet). |
 | `ApplicationWriter` | Erstellt per LLM für die besten eligible Matches fertige Antragsentwürfe unter `out/applications/<programm-id>.md`. |
 | `Orchestrator` | Koordiniert die Agenten und zeichnet den Trace. |
+
+## Workflow: Research → Match → Klärung
+
+1. **Research pro Verwaltungsebene** (EU/Bund/Land/Gemeinde) – Programme, Kriterien, Formalismen und Ansprechpartner recherchieren:
+   ```bash
+   foerderpilot research --config examples/config.yaml --levels bund,land --max-per-level 5
+   # optional: --use-lake-profile (Profil aus dem Data Lake in die Such-Queries einbauen)
+   # Backend: research.backend: ddg (Default, DuckDuckGo-HTML) oder static (research.sources in Config)
+   ```
+   Ergebnis: Drafts in `programs/research/<ebene>-<id>.json` inkl. `contact` (Stelle/E-Mail), `criteria`,
+   `required_documents`, `funding`, `source_url`, `status: "draft"` + `research-report.json`.
+   **Menschliches Review, dann verschieben:** `mv programs/research/bund-xyz.json programs/` – erst dann matcht die Pipeline das Programm.
+2. **Match gegen die proprietären Systeme** – `foerderpilot run` (Explorer liest Data Lake / SQL / S3, Matcher gegen `programs/`).
+3. **Lücken → Klärungs-Mail** – `GapAnalysis` schreibt `out/gaps.json`, `Clarification` formuliert Mail-Entwürfe
+   an die jeweilige Stelle nach `out/emails/<id>.md` (An/Betreff/Text). Abschaltbar: `clarification: {enabled: false}`.
+   In der Web-UI (`foerderpilot serve`) sind Lücken und Mail-Entwürfe unter „Luecken & Klaerungs-Mails“ sichtbar
+   (`/api/gaps`, `/api/emails`, `/api/emails/<id>`). |
 
 ## Data-Lake-Connectoren
 
