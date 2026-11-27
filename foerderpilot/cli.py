@@ -138,6 +138,29 @@ def _cmd_research(args: argparse.Namespace) -> int:
     return 0 if not report.errors else 1
 
 
+def _cmd_sap_guide(args: argparse.Namespace) -> int:
+    from foerderpilot.config import load_config
+    from foerderpilot.sap import intake_dir_from_config, load_runbook, run_interactive, run_once
+
+    config = None
+    if args.config and Path(args.config).exists():
+        config = load_config(args.config)
+    drop_dir = intake_dir_from_config(config)
+    recipes = load_runbook(args.runbook)
+    if args.list:
+        for r in recipes:
+            print(f"{r.id:24s} [{r.domain:7s}] {r.title}")
+        return 0
+    if not args.goal:
+        print("Bitte --goal angeben, z. B. --goal 'Kosten je Kostenstelle Ist 2025' (oder --list).", file=sys.stderr)
+        return 2
+    if args.batch:
+        run_once(args.goal, args.domain, drop_dir, out=print, runbook_path=args.runbook)
+    else:
+        run_interactive(args.goal, args.domain, drop_dir, runbook_path=args.runbook)
+    return 0
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     import os
 
@@ -189,6 +212,17 @@ def main(argv: list[str] | None = None) -> int:
     res_p.add_argument("--out", default="programs/research", help="Zielverzeichnis fuer Drafts (Default: programs/research)")
     res_p.add_argument("--use-lake-profile", action="store_true", help="vorher Pipeline laufen lassen und Profil aus dem Data Lake fuer die Such-Queries nutzen")
     res_p.set_defaults(func=_cmd_research)
+    sap_p = sub.add_parser(
+        "sap-guide",
+        help="Souffleur-Agent: Schritt-fuer-Schritt-Anleitung fuer SAP-Extraktionen (TCode/Menü/Export)",
+    )
+    sap_p.add_argument("--config", default="config.yaml", help="Config – bestimmt den Intake-Ordner (local root + /sap_exports)")
+    sap_p.add_argument("--goal", default=None, help="Datenziel, z. B. 'Kosten je Kostenstelle Ist 2025'")
+    sap_p.add_argument("--domain", default=None, help="SAP-Domain: co | bw | fi | sd | mm | general")
+    sap_p.add_argument("--runbook", default=None, help="eigenes Runbook-YAML (Default: eingebautes foerderpilot/sap/runbook.yaml)")
+    sap_p.add_argument("--list", action="store_true", help="alle Rezepte auflisten und beenden")
+    sap_p.add_argument("--batch", action="store_true", help="nicht-interaktiv: komplettes Rezept ausgeben")
+    sap_p.set_defaults(func=_cmd_sap_guide)
     args = parser.parse_args(argv)
     return args.func(args)
 

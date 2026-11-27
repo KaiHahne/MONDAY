@@ -53,6 +53,7 @@ foerderpilot/
     matcher.py            # OPERATORS, evaluate_criterion, match_program, rank_matches
     importer.py           # CSV/JSON-Export -> programs/<id>.json (import-programs)
   research/               # backend.py (SearchBackend: static/ddg, fetch_text), agent.py (research_programs -> Drafts)
+  sap/                    # runbook.yaml (Extraktions-Rezepte), guide.py (Souffleur: match_recipe, run_interactive, run_once)
   llm/client.py           # LLMClient-Protokoll + OpenAICompatibleClient (env-basiert)
   agents/                 # base, explorer, matcher, gap, gapsearch, clarification, writer
   web/                    # server.py (stdlib http.server, Bearer-Token), index.html (mobil)
@@ -136,6 +137,12 @@ SAP HANA / Databricks-SQL-Warehouses / Planisware-DB gehen über den bestehenden
 Evidence nach `context.evidence` → `out/gap_evidence.json`. Danach re-matched die Pipeline automatisch
 (siehe Phasen in `pipeline.run_pipeline`).
 
+### SAP-Runbook erweitern
+Rezepte liegen in `foerderpilot/sap/runbook.yaml` (id, domain, keywords fürs Matching, tables, steps mit
+tcode/menu/enter/expect/export, notes, drop_into). Matching: `match_recipe()` (Keyword-Overlap + Domain-Bonus,
+Fallback auf `general`). REPL in `run_interactive()` (next/back/switch/done). Intake-Ordner:
+`intake_dir_from_config()` = erster local-Connector-root + `/sap_exports`. Tests: `tests/test_sap_guide.py`.
+
 ### Web-API erweitern
 Neuer Endpunkt = weiterer `elif`-Zweig in `web/server.py: WebHandler.do_GET/do_POST`
 (nach dem Auth-Check!). Programm-IDs/Dateinamen immer gegen Pfad-Traversal härten
@@ -187,6 +194,7 @@ Test-Konventionen:
 | `foerderpilot init --dir D` | Beispiel-Config + Beispiel-Programm anlegen |
 | `foerderpilot import-programs --input E --out programs/ [--mapping M] [--force] [--dry-run]` | Förder-Export → Regeldateien |
 | `foerderpilot research --config C [--levels eu,bund] [--max-per-level 5] [--out programs/research] [--use-lake-profile]` | Programme pro Verwaltungsebene recherchieren → Drafts |
+| `foerderpilot sap-guide --goal "…" [--domain co|bw|fi|sd|mm|general] [--batch] [--list] [--runbook R]` | Souffleur: SAP-Extraktionsschritte ausgeben (interaktiv oder Batch) |
 
 ## 9. Häufige Stolpersteine
 

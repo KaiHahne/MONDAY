@@ -1,0 +1,169 @@
+# SAP-Extraktions-Runbook fuer den Souffleur-Agent (foerderpilot sap-guide).
+# Pro Rezept: id, domain, title, keywords (Matching), tables, steps[], notes[], drop_into.
+# steps: tcode, menu, enter (Feld: Wert), expect, export (menu/format/filename).
+recipes:
+  - id: co-kostenstellen-ist
+    domain: co
+    title: "Kosten je Kostenstelle (Ist) eines Geschäftsjahres"
+    keywords: [kostenstelle, kosten, ist, ksbt, s_alr_87013611, kostenstellenrechnung, coep, bericht]
+    tables: [CSKS, COEP, COSP]
+    drop_into: sap_exports/
+    steps:
+      - tcode: "S_ALR_87013611"
+        menu: "SAP Menü → Rechnungswesen → Controlling → Kostenstellenrechnung → Berichte → Kostenstellen: Ist/Plan/Abweichung"
+        enter:
+          Berichtsauswahl: "Ist-Kosten"
+          Geschäftsjahr: "2025"
+          Variante: "Standardvariante verwenden oder neue anlegen (Variante sichern)"
+        expect: "ALV-Liste: Kostenstelle, Kostenartengruppe, Ist-Betrag je Periode"
+        export:
+          menu: "System → Liste → Exportieren → Lokale Datei"
+          format: "Unkonvertiert"
+          filename: "kostenstellen_ist_2025.txt"
+      - tcode: "SE16N"
+        menu: "Transaktion SE16N → Tabelle COEP (alle Kostenstellenposten)"
+        enter:
+          Tabelle: "COEP"
+          Geschäftsjahr: "2025 (Feld GJAHR)"
+          weitere Selektion: "falls nötig Kostenstelle/Kostenart einschränken"
+        expect: "ALV-Trefferliste aller Ist-Posten"
+        export:
+          menu: "System → Liste → Exportieren → Lokale Datei"
+          format: "Tabellenkalkulation (XLSX) – besser für Auswertung"
+          filename: "coep_ist_2025.xlsx"
+    notes:
+      - "XLSX bevorzugen (saubere Typen); 'Unkonvertiert' nur, wenn XLSX im Menü fehlt."
+      - "Dateien danach in den Intake-Ordner legen – foerderpilot run nimmt sie automatisch auf."
+
+  - id: co-primärkosten
+    domain: co
+    title: "Primäre Kostenarten (Plan/Ist) gesamt"
+    keywords: [primärkosten, kostenarten, cosp, cose, plan, ist, 2025]
+    tables: [COSP, COSS, CSKA]
+    drop_into: sap_exports/
+    steps:
+      - tcode: "S_ALR_87013624"
+        menu: "SAP Menü → Rechnungswesen → Controlling → Allgemeine Kostenrechnung → Berichte → Ist/Plan-Vergleich"
+        enter:
+          Geschäftsjahr: "2025"
+          Version: "0 (Ist) bzw. Planversion"
+        expect: "Kostenarten je Kostenstellengruppe"
+        export: {menu: "System → Liste → Exportieren → Lokale Datei", format: "Tabellenkalkulation (XLSX)", filename: "kostenarten_2025.xlsx"}
+      - tcode: "SE16N"
+        menu: "Tabelle COSP (Sekundärkosten/primäre Kostenarten Plan/Ist)"
+        enter: {Tabelle: "COSP", Geschäftsjahr: "2025", Version: "0"}
+        expect: "ALV-Trefferliste"
+        export: {menu: "System → Liste → Exportieren → Lokale Datei", format: "Unkonvertiert", filename: "cosp_2025.txt"}
+    notes:
+      - "Für Förderanträge meist COSP/COSS (Sekundärkosten) relevanter als COEP."
+
+  - id: bw-query-export
+    domain: bw
+    title: "BW-Query-Ergebnis exportieren"
+    keywords: [bw, query, rsa3, se38, rsrt, export, analyse, /bic/, infoset, extractor, exportieren]
+    tables: ["/BIC/*"]
+    drop_into: sap_exports/
+    steps:
+      - tcode: "RSA3"
+        menu: "RSA3 → Extractor Checker: DataSources prüfen, letzter Delta-Lauf kontrollieren"
+        enter: {DataSource: "<deine DataSource, z. B. 0CO_OM_OPA_1>"}
+        expect: "Status des letzten Extraktionslaufs"
+        export: null
+      - tcode: "SE38"
+        menu: "SE38 → Programm RSRT (Query ausführen)"
+        enter:
+          Programm: "RSRT"
+          Query: "<Query-Name, z. B. ZFOERD_KOSTENSTELLEN>"
+          Variante: "falls vorhanden"
+        expect: "ALV-Ergebnisliste der Query"
+        export:
+          menu: "System → Liste → Exportieren → Lokale Datei"
+          format: "Tabellenkalkulation (XLSX)"
+          filename: "bw_query_ergebnis.xlsx"
+    notes:
+      - "Falls Query nicht existiert: QueryDesigner (SQ01/SQ02) bzw. InfoSet (SQ07) anlegen oder BW-Admin fragen."
+      - "Alternativ InfoPackage-Log prüfen, wenn Daten fehlen."
+
+  - id: bw-infoproviders
+    domain: bw
+    title: "BW-InfoProvider/InfoCubes auflisten (RSA1)"
+    keywords: [bw, infocube, infoprovider, rsa1, datenmodell, cube, overview]
+    tables: []
+    drop_into: sap_exports/
+    steps:
+      - tcode: "RSA1"
+        menu: "RSA1 → Modellierung → InfoProvider → Baum anzeigen"
+        enter: {Suche: "<Stichwort, z. B. Kostenstelle oder 0CO*>"}
+        expect: "Liste aller InfoCubes/InfoObjects/DataSources dazu"
+        export:
+          menu: "System → Liste → Exportieren → Lokale Datei"
+          format: "Unkonvertiert"
+          filename: "bw_infoproviders.txt"
+    notes:
+      - "Reine Übersicht für die Auswahl der richtigen Query/DataSource."
+
+  - id: general-se16n
+    domain: general
+    title: "Beliebige SAP-Tabelle ansehen und exportieren (SE16N Data Browser)"
+    keywords: [tabelle, se16n, se16, data browser, select, export, beliebige tabelle, alv]
+    tables: []
+    drop_into: sap_exports/
+    steps:
+      - tcode: "SE16N"
+        menu: "Transaktion SE16N direkt eingeben"
+        enter:
+          Tabelle: "<Tabellenname, z. B. KNA1, VBAK, EKKO, BKPF>"
+          Anzahl Treffer: "max. 500 (für Export) bzw. leer für alle mit Selektion"
+          Selektionsfelder: "z. B. ERDAT, GJAHR, BUKRS je Datenziel"
+        expect: "ALV-Trefferliste"
+        export:
+          menu: "System → Liste → Exportieren → Lokale Datei"
+          format: "Tabellenkalkulation (XLSX) bevorzugt, sonst Unkonvertiert"
+          filename: "se16n_<tabelle>.xlsx"
+      - tcode: "SE16N"
+        menu: "Tabelleninhalt über Weiterspringen: Feldkatalog (F5) für Spaltennamen"
+        enter: {}
+        expect: "Feldliste der Tabelle"
+        export: null
+    notes:
+      - "Für große Tabellen nie ohne Selektion exportieren – SAP bricht sonst ab."
+      - "Transaktionsvariante anlegen (SE93), um Selektionen zu sichern."
+
+  - id: general-spool-files
+    domain: general
+    title: "Spool/Jobs und Server-Dateien (SM37, AL11)"
+    keywords: [spool, job, sm37, al11, datei, server, pfad, export, spooldatei]
+    tables: []
+    drop_into: sap_exports/
+    steps:
+      - tcode: "SM37"
+        menu: "Übersicht → Jobs → eigene Jobs"
+        enter: {Benutzer: "<dein User>", Status: "Fertig"}
+        expect: "Liste deiner Jobs mit Spool-Nummern"
+        export: null
+      - tcode: "AL11"
+        menu: "AL11 → SAP-Verzeichnisse des Applikationsservers"
+        enter: {Verzeichnis: "z. B. /usr/sap/<SID>/D<instanz>/work"}
+        expect: "Dateiliste des Servers"
+        export: null
+    notes:
+      - "Spool → System → Spoolauftrag → Drucken/Sichern als Datei; dann per AL11/Transfer lokal holen."
+      - "Server-Dateien: AL11 → Download (Pfeil) auf lokalen PC."
+
+  - id: general-alv-export
+    domain: general
+    title: "Jede ALV-Liste sauber exportieren (gilt für ALLE Berichte)"
+    keywords: [alv, liste, export, lokal, csv, xlsx, unkonvertiert, format, download]
+    tables: []
+    drop_into: sap_exports/
+    steps:
+      - tcode: "-"
+        menu: "In der ALV-Liste: System → Liste → Exportieren → Lokale Datei"
+        enter:
+          Format: "Tabellenkalkulation (XLSX) – bevorzugt; alternativ 'Unkonvertiert' (TXT)"
+          Dateiname: "<ziel>.xlsx im Intake-Ordner oder Downloads"
+        expect: "Datei lokal gespeichert"
+        export: null
+    notes:
+      - "'Unkonvertiert' liefert Trennzeichen-getrennten Text (meist Semikolon) mit Kopfzeile – der Intake-Normalisierer bzw. der local-Connector kommt damit zurecht."
+      - "Bei sehr großen Listen: zuerst filtern (Selektionsbild), dann exportieren."

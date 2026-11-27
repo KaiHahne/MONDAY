@@ -39,6 +39,25 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
 - **SQL**: beliebige Datenbank via SQLAlchemy (`pip install foerderpilot[sql]`)
 - **S3**: S3-kompatible Object Stores inkl. MinIO (`pip install foerderpilot[s3]`); Credentials nur aus der Umgebung (`AWS_*` bzw. `FOERDERPILOT_S3_*`)
 
+## SAP-Souffleur: manuelle Extraktion Schritt für Schritt guided
+
+Ein Agent, der deinen Bildschirm live sieht, geht in dieser Umgebung nicht (kein Desktop/Screen-Zugriff) –
+dafür gibt es den **Runbook-Agenten**: Du beschreibst das Datenziel, der Agent souffliert dir die exakten
+SAP-Schritte (TCode, Menüpfad, Felder, Export), du arbeitest sie in der SAP-GUI ab und legst die Downloads
+in den Intake-Ordner – der Data Lake liest sie automatisch ein.
+
+```bash
+foerderpilot sap-guide --list                                          # alle Rezepte
+foerderpilot sap-guide --goal "Kosten je Kostenstelle Ist 2025" --domain co   # interaktiver Souffleur (next/back/switch/done)
+foerderpilot sap-guide --goal "BW Query exportieren" --domain bw --batch    # nicht-interaktiv
+```
+
+- Runbook: `foerderpilot/sap/runbook.yaml` (CO: KSBT/S_ALR_87013611, COEP/COSP via SE16N; BW: RSA3/RSRT, RSA1;
+  allgemein: SE16N, SM37/AL11, ALV-Export) – eigenes Runbook per `--runbook` möglich.
+- Intake-Ordner: `<erster local-Connector-root>/sap_exports/` (wird angelegt); Dateien dort landen
+  automatisch im Katalog/Profil bei `foerderpilot run`.
+- REPL-Befehle: `next/n`, `back/b`, `repeat/r`, `switch <rezept-id>`, `help`, `done/q`.
+
 ## Proprietäre Unternehmensquellen (agentische Lückensuche)
 
 Neben Data Lakes (lokal/SQL/S3) können **proprietäre Systeme** als Connector vom Typ `rest`
