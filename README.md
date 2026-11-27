@@ -130,6 +130,39 @@ connectors:
 Alle REST-Connectoren landen automatisch im Katalog (Profil-Extraktion läuft auch über sie)
 und stehen dem `GapSearchAgent` per `search()` zur Verfügung. Token landen nie in Logs/Outputs.
 
+### SQL-Connector: Voraussetzungen & Berechtigungs-Pfad (key user ohne Admin-Rechte)
+
+**Technisch nötig:** (1) Netzwerk-Route zum DB-Port (HANA `3xx15`, meist nur intern/VPN; Databricks 443),
+(2) Treiber lokal: `pip install foerderpilot[sql]` + `hdbcli` (HANA) bzw. `databricks-sql-connector`,
+(3) **read-only DB-Account** mit `SELECT` auf die relevanten Schemas + Katalog-Leserechten.
+
+**Berechtigung:** Als key user schaltest du das nicht selbst frei (`GRANT` darf nur DBA/Schema-Owner) –
+aber du brauchst auch keinen Admin bei dir, sondern ein Standard-Ticket, z. B.:
+
+> „Bitte dedizierten read-only Service-Account anlegen (oder meinem User lesend gewähren):
+> `SELECT` auf Schemas `SAPABAP1`, `<BW-Schema>` und `CATALOG READ`. Kein Schreibzugriff, kein DDL.
+> Zweck: automatisierte Förderprogramm-Recherche (foerderpilot), nur lesend. DSVO: AVV vorhanden."
+
+HANA-Beispiele (führt der DBA aus):
+
+```sql
+CREATE USER FOERDERPILOT_RO PASSWORD "..." CHANGE PASSWORD ON NEXT LOGON? NO;
+GRANT SELECT ON SCHEMA SAPABAP1 TO FOERDERPILOT_RO;
+GRANT SELECT ON SCHEMA _SYS_BIC TO FOERDERPILOT_RO;   -- BW-Content
+GRANT CATALOG READ TO FOERDERPILOT_RO;                -- information_schema/Spalten-Katalog
+-- Kerberos/X.509 statt Passwort: siehe Doku-Abschnitt „SSO"
+```
+
+**Headless-SSO statt Passwort** (kein Langzeit-Secret in der URL): Kerberos/SPNEGO (kinit-Ticket aus deinem AD-SSO),
+X.509-Client-Zertifikat (mTLS, Zertifikat auf HANA-User gemappt) oder OAuth2/JWT über SAP IAS (kurzlebige Tokens).
+Details/Implementierung im SQL-Connector: geplant als `auth:`-Modi `kerberos` / `x509` / `oauth_jwt` (alles über Env-Vars).
+
+**Admin-freier Pfad (kein DBA-Ticket nötig):** SAP-GUI-Extraktion mit deinen normalen Rechten –
+`foerderpilot sap-guide --goal "…" [--domain co|bw|fi|sd|mm]` souffliert TCode/Menü/Export (SE16N braucht nur
+`S_TABU_DIS` auf die jeweilige Tabelle, das haben key user oft), Datei landet in `<lake-root>/sap_exports/`
+und wird vom Explorer automatisch eingelesen. Gleiches gilt für ALV-Exporte von Standardberichten und
+BW-Query-Exporte (RSA3/RSRT), die du mit Berichtsrechten eh ausführen darfst.
+
 ## Förderprogramm-Regeln
 
 Programme sind maschinenlesbare JSON/YAML-Definitionen (siehe `programs/`):

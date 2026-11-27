@@ -139,6 +139,13 @@ Mindestlängen-Check ausgenommen.
 Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM (`tests/test_research.py`,
 `tests/test_research_hardening.py` – inkl. echtem Mini-PDF, robots-Block, Retry-500).
 
+### SQL-Connector (HANA/Databricks) & Berechtigungen
+Voraussetzungen und Berechtigungs-Pfad (key user ohne Admin, Ticket-Vorlage, HANA-GRANT-Beispiele,
+Kerberos/X.509/OAuth-JWT als headless-SSO-Optionen, admin-freier sap-guide-Pfad) sind in der
+[README](../README.md#sql-connector-voraussetzungen--berechtigungs-pfad-key-user-ohne-admin-rechte)
+dokumentiert. Geplante Erweiterung: `auth:`-Modi `kerberos`/`x509`/`oauth_jwt` im `sql`-Connector
+(hdbcli-`connect_args`), alles über Env – noch nicht implementiert.
+
 ### Proprietäre Quelle (REST) hinzufügen
 Preset in `connectors/presets.py` anlegen (auth-Scheme, datasets/search-Pfade mit `{q}`/`{limit}`,
 Item-Mapping als Dotted Paths) oder `preset: generic` mit eigenen Pfaden in der Config nutzen.
