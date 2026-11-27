@@ -58,6 +58,24 @@ foerderpilot sap-guide --goal "BW Query exportieren" --domain bw --batch    # ni
   automatisch im Katalog/Profil bei `foerderpilot run`.
 - REPL-Befehle: `next/n`, `back/b`, `repeat/r`, `switch <rezept-id>`, `help`, `done/q`.
 
+### Rezepte als Automation ausgeben (Power Automate / SAP GUI Scripting / …)
+
+Rezepte können pro Rezept und pro Schritt ein `automation:`-Block enthalten (tool-neutrale Action-Liste,
+z. B. `SendKeys`, `SetText`, `ClickMenu`, `WaitForWindow`). Daraus rendert der Agent ausführbare Skripte:
+
+```bash
+foerderpilot sap-guide --goal "Kosten je Kostenstelle Ist 2025" --domain co --emit actions   # tool-neutrale Action-Liste (JSON)
+foerderpilot sap-guide --goal "..." --domain co --emit pad --out flow.json   # Power-Automate-Desktop-Flow (JSON)
+foerderpilot sap-guide --goal "..." --domain co --emit vba --out makro.vba  # SAP GUI Scripting (VBA-Makro)
+```
+
+- **Power Automate Desktop:** `flow.json` als Flow-Schritte übernehmen; Control-IDs einmalig per PAD-Recorder
+  bzw. SAP Scripting-Tracker (Alt+F12) nachtragen (stehen als `<...>`- Platzhalter im JSON).
+- **SAP GUI Scripting (VBA):** Makro erfordert im SAP GUI „Scripting aktivieren“ + VBA-Verweis auf die
+  „SAP GUI Scripting API“; Feld-IDs (`wnd[0]/usr/...`) als TODO-Platzhalter markiert.
+- Ablauf bleibt: Skript/Flow auf deinem Windows-Rechner mit SAP ausführen → Datei landet im Intake-Ordner →
+  `foerderpilot run` verarbeitet sie weiter.
+
 ## Proprietäre Unternehmensquellen (agentische Lückensuche)
 
 Neben Data Lakes (lokal/SQL/S3) können **proprietäre Systeme** als Connector vom Typ `rest`

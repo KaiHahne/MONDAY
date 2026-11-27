@@ -154,6 +154,17 @@ def _cmd_sap_guide(args: argparse.Namespace) -> int:
     if not args.goal:
         print("Bitte --goal angeben, z. B. --goal 'Kosten je Kostenstelle Ist 2025' (oder --list).", file=sys.stderr)
         return 2
+    if args.emit:
+        from foerderpilot.sap import RENDERERS, match_recipe
+
+        recipe, _ = match_recipe(args.goal, args.domain, args.runbook)
+        text = RENDERERS[args.emit](recipe)
+        if args.out:
+            Path(args.out).write_text(text + "\n", encoding="utf-8")
+            print(f"Script geschrieben: {args.out} (Rezept {recipe.id}, Emit {args.emit})")
+        else:
+            print(text)
+        return 0
     if args.batch:
         run_once(args.goal, args.domain, drop_dir, out=print, runbook_path=args.runbook)
     else:
@@ -222,6 +233,9 @@ def main(argv: list[str] | None = None) -> int:
     sap_p.add_argument("--runbook", default=None, help="eigenes Runbook-YAML (Default: eingebautes foerderpilot/sap/runbook.yaml)")
     sap_p.add_argument("--list", action="store_true", help="alle Rezepte auflisten und beenden")
     sap_p.add_argument("--batch", action="store_true", help="nicht-interaktiv: komplettes Rezept ausgeben")
+    sap_p.add_argument("--emit", choices=["actions", "pad", "vba"], default=None,
+                       help="Rezept als Automation rendern: actions (tool-neutral), pad (Power Automate Desktop JSON), vba (SAP GUI Scripting Makro)")
+    sap_p.add_argument("--out", default=None, help="Ausgabedatei fuer --emit (Default: stdout)")
     sap_p.set_defaults(func=_cmd_sap_guide)
     args = parser.parse_args(argv)
     return args.func(args)

@@ -8,6 +8,13 @@ recipes:
     keywords: [kostenstelle, kosten, ist, ksbt, s_alr_87013611, kostenstellenrechnung, coep, bericht]
     tables: [CSKS, COEP, COSP]
     drop_into: sap_exports/
+    automation:
+      tool: power-automate-desktop        # oder: sap-gui-scripting-vba, sikuli
+      app: "saplogon.exe"
+      launch_args: "<System aus saplogon.ini, z. B. PRD [PRD]>"
+      actions:
+        - {action: WaitForWindow, titleContains: "SAP Logon", comment: "SAP Logon oeffnen und anmelden"}
+        - {action: WaitForWindow, titleContains: "SAP Easy Access", comment: "Hauptfenster abwarten"}
     steps:
       - tcode: "S_ALR_87013611"
         menu: "SAP Menü → Rechnungswesen → Controlling → Kostenstellenrechnung → Berichte → Kostenstellen: Ist/Plan/Abweichung"
@@ -16,6 +23,11 @@ recipes:
           Geschäftsjahr: "2025"
           Variante: "Standardvariante verwenden oder neue anlegen (Variante sichern)"
         expect: "ALV-Liste: Kostenstelle, Kostenartengruppe, Ist-Betrag je Periode"
+        automation:
+          - {action: WaitForWindow, titleContains: "Kostenstellen"}
+          - {action: SetText, control: "<Feld Geschäftsjahr – ID per Recorder/Scripting-Tracker (Alt+F12) ermitteln>", text: "2025"}
+          - {action: PressKey, key: "F8", comment: "Ausführen"}
+          - {action: WaitForWindow, titleContains: "ALV"}
         export:
           menu: "System → Liste → Exportieren → Lokale Datei"
           format: "Unkonvertiert"
@@ -27,6 +39,10 @@ recipes:
           Geschäftsjahr: "2025 (Feld GJAHR)"
           weitere Selektion: "falls nötig Kostenstelle/Kostenart einschränken"
         expect: "ALV-Trefferliste aller Ist-Posten"
+        automation:
+          - {action: SetText, control: "<Feld Tabellenname>", text: "COEP"}
+          - {action: SetText, control: "<Feld GJAHR>", text: "2025"}
+          - {action: PressKey, key: "F8"}
         export:
           menu: "System → Liste → Exportieren → Lokale Datei"
           format: "Tabellenkalkulation (XLSX) – besser für Auswertung"
@@ -34,6 +50,7 @@ recipes:
     notes:
       - "XLSX bevorzugen (saubere Typen); 'Unkonvertiert' nur, wenn XLSX im Menü fehlt."
       - "Dateien danach in den Intake-Ordner legen – foerderpilot run nimmt sie automatisch auf."
+      - "Feld-IDs (usr/ctxt...) sind systemspezifisch: einmalig mit SAP Scripting-Tracker (Alt+F12) aufzeichnen und in automation eintragen."
 
   - id: co-primärkosten
     domain: co
@@ -63,12 +80,20 @@ recipes:
     keywords: [bw, query, rsa3, se38, rsrt, export, analyse, /bic/, infoset, extractor, exportieren]
     tables: ["/BIC/*"]
     drop_into: sap_exports/
+    automation:
+      tool: power-automate-desktop
+      app: "saplogon.exe"
+      launch_args: "<System aus saplogon.ini>"
+      actions:
+        - {action: WaitForWindow, titleContains: "SAP Easy Access"}
     steps:
       - tcode: "RSA3"
         menu: "RSA3 → Extractor Checker: DataSources prüfen, letzter Delta-Lauf kontrollieren"
         enter: {DataSource: "<deine DataSource, z. B. 0CO_OM_OPA_1>"}
         expect: "Status des letzten Extraktionslaufs"
         export: null
+        automation:
+          - {action: WaitForWindow, titleContains: "Extractor Checker"}
       - tcode: "SE38"
         menu: "SE38 → Programm RSRT (Query ausführen)"
         enter:
@@ -76,6 +101,12 @@ recipes:
           Query: "<Query-Name, z. B. ZFOERD_KOSTENSTELLEN>"
           Variante: "falls vorhanden"
         expect: "ALV-Ergebnisliste der Query"
+        automation:
+          - {action: SetText, control: "<Feld Programm>", text: "RSRT"}
+          - {action: PressKey, key: "F8"}
+          - {action: SetText, control: "<Feld Query>", text: "ZFOERD_KOSTENSTELLEN"}
+          - {action: PressKey, key: "F8"}
+          - {action: WaitForWindow, titleContains: "ALV"}
         export:
           menu: "System → Liste → Exportieren → Lokale Datei"
           format: "Tabellenkalkulation (XLSX)"

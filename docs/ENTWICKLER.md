@@ -53,7 +53,7 @@ foerderpilot/
     matcher.py            # OPERATORS, evaluate_criterion, match_program, rank_matches
     importer.py           # CSV/JSON-Export -> programs/<id>.json (import-programs)
   research/               # backend.py (SearchBackend: static/ddg, fetch_text), agent.py (research_programs -> Drafts)
-  sap/                    # runbook.yaml (Extraktions-Rezepte), guide.py (Souffleur: match_recipe, run_interactive, run_once)
+  sap/                    # runbook.yaml (Rezepte + automation-Blöcke), guide.py (Souffleur), automation.py (Renderer: actions/pad/vba)
   llm/client.py           # LLMClient-Protokoll + OpenAICompatibleClient (env-basiert)
   agents/                 # base, explorer, matcher, gap, gapsearch, clarification, writer
   web/                    # server.py (stdlib http.server, Bearer-Token), index.html (mobil)
@@ -139,9 +139,16 @@ Evidence nach `context.evidence` → `out/gap_evidence.json`. Danach re-matched 
 
 ### SAP-Runbook erweitern
 Rezepte liegen in `foerderpilot/sap/runbook.yaml` (id, domain, keywords fürs Matching, tables, steps mit
-tcode/menu/enter/expect/export, notes, drop_into). Matching: `match_recipe()` (Keyword-Overlap + Domain-Bonus,
-Fallback auf `general`). REPL in `run_interactive()` (next/back/switch/done). Intake-Ordner:
-`intake_dir_from_config()` = erster local-Connector-root + `/sap_exports`. Tests: `tests/test_sap_guide.py`.
+tcode/menu/enter/expect/export, notes, drop_into, optional `automation` pro Rezept und pro Schritt).
+Matching: `match_recipe()` (Keyword-Overlap + Domain-Bonus, Fallback auf `general`). REPL in
+`run_interactive()` (next/back/switch/done). Intake-Ordner: `intake_dir_from_config()` =
+erster local-Connector-root + `/sap_exports`. Tests: `tests/test_sap_guide.py`, `tests/test_sap_automation.py`.
+
+### Automation-Renderer erweitern
+`automation.py`: `render_actions()` baut die tool-neutrale Action-Sequenz (Launch + pro Schritt:
+SendKeys/SetText/Automation/Export-Menü), `render_pad()` (Power-Automate-Desktop-JSON), `render_vba()`
+(SAP-GUI-Scripting-Makro mit TODO-Platzhaltern für Feld-IDs). CLI: `--emit actions|pad|vba [--out DATEI]`.
+Neue Action-Typen in `render_vba()` und `step_actions()` abbilden.
 
 ### Web-API erweitern
 Neuer Endpunkt = weiterer `elif`-Zweig in `web/server.py: WebHandler.do_GET/do_POST`

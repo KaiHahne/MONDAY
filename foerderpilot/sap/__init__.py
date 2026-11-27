@@ -1,3 +1,4 @@
+from foerderpilot.sap.automation import RENDERERS, render_actions, render_pad, render_vba
 from foerderpilot.sap.guide import (
     Recipe,
     format_recipe,
@@ -18,4 +19,8 @@ __all__ = [
     "match_recipe",
     "run_interactive",
     "run_once",
+    "RENDERERS",
+    "render_actions",
+    "render_pad",
+    "render_vba",
 ]

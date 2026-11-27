@@ -16,6 +16,7 @@ class Step:
     enter: dict[str, str] = field(default_factory=dict)
     expect: str = ""
     export: dict[str, str] | None = None
+    automation: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -28,6 +29,7 @@ class Recipe:
     steps: list[Step]
     notes: list[str]
     drop_into: str
+    automation: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -39,6 +41,7 @@ class Recipe:
             "steps": [s.__dict__ for s in self.steps],
             "notes": self.notes,
             "drop_into": self.drop_into,
+            "automation": self.automation,
         }
 
 
@@ -61,11 +64,13 @@ def load_runbook(path: str | Path | None = None) -> list[Recipe]:
                         enter={str(k): str(v) for k, v in (s.get("enter") or {}).items()},
                         expect=str(s.get("expect", "")),
                         export=(dict(s["export"]) if s.get("export") else None),
+                        automation=[dict(a) for a in s.get("automation", [])],
                     )
                     for s in r.get("steps", [])
                 ],
                 notes=[str(n) for n in r.get("notes", [])],
                 drop_into=str(r.get("drop_into", "sap_exports/")),
+                automation=dict(r.get("automation") or {}),
             )
         )
     if not recipes:
