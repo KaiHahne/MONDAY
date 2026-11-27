@@ -104,10 +104,34 @@ def pdf_to_text(data: bytes, max_chars: int = 20000) -> str:
     return re.sub(r"\s+", " ", text).strip()[:max_chars]
 
 
+_HREF_RE = re.compile(r'(?:href|src)="([^"]+)"', re.I)
+
+
+def extract_links(html_text: str, base_url: str) -> list[str]:
+    """Absolute HTTP(S)-Links aus HTML extrahieren (für Multi-Hop-Crawl), Duplikate entfernt."""
+    links: list[str] = []
+    seen: set[str] = set()
+    for raw in _HREF_RE.findall(html_text):
+        url = urllib.parse.urljoin(base_url, html.unescape(raw)).split("#")[0]
+        if url.startswith(("http://", "https://")) and url not in seen:
+            seen.add(url)
+            links.append(url)
+    return links
+
+
 def build_fetcher(config: dict[str, Any]) -> Callable[[str], str]:
     """Fetcher aus config.research aufbauen: UA, robots.txt, Retry/Backoff, Crawl-Delay, PDF/HTML."""
+    page_fetch = build_page_fetcher(config)
+
+    def fetch(url: str) -> str:
+        return page_fetch(url)[0]
+
+    return fetch
+
+
+def _http_from_config(config: dict[str, Any]) -> HttpFetcher:
     r = config.get("research") or {}
-    http = HttpFetcher(
+    return HttpFetcher(
         user_agent=str(r.get("user_agent", DEFAULT_USER_AGENT)),
         timeout=float(r.get("timeout", 30.0)),
         max_retries=int(r.get("max_retries", 2)),
@@ -115,15 +139,22 @@ def build_fetcher(config: dict[str, Any]) -> Callable[[str], str]:
         crawl_delay=float(r.get("crawl_delay", 1.0)),
         respect_robots=bool(r.get("respect_robots", True)),
     )
+
+
+def build_page_fetcher(config: dict[str, Any]) -> Callable[[str], tuple[str, list[str]]]:
+    """Wie build_fetcher, liefert aber (text, links) – Basis fürs Multi-Hop-Crawling."""
+    r = config.get("research") or {}
+    http = _http_from_config(config)
     max_chars = int(r.get("max_chars", 20000))
 
-    def fetch(url: str) -> str:
+    def fetch_page(url: str) -> tuple[str, list[str]]:
         data, content_type = http.get_bytes(url)
         if "pdf" in content_type.lower() or urllib.parse.urlparse(url).path.lower().endswith(".pdf"):
-            return pdf_to_text(data, max_chars)
-        return _html_to_text(data.decode("utf-8", errors="replace"), max_chars)
+            return pdf_to_text(data, max_chars), []
+        raw = data.decode("utf-8", errors="replace")
+        return _html_to_text(raw, max_chars), extract_links(raw, url)
 
-    return fetch
+    return fetch_page
 
 
 def fetch_text(url: str, max_chars: int = 20000, timeout: float = 20.0, fetcher: Callable[[str], str] | None = None) -> str:

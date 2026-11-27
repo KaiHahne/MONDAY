@@ -5,6 +5,8 @@ from foerderpilot.research.backend import (
     StaticBackend,
     build_backend,
     build_fetcher,
+    build_page_fetcher,
+    extract_links,
     fetch_text,
     pdf_to_text,
 )
@@ -17,6 +19,8 @@ __all__ = [
     "StaticBackend",
     "build_backend",
     "build_fetcher",
+    "build_page_fetcher",
+    "extract_links",
     "fetch_text",
     "pdf_to_text",
 ]

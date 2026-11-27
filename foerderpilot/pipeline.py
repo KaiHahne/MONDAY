@@ -8,6 +8,7 @@ from foerderpilot.agents import (
     AgentContext,
     ApplicationWriterAgent,
     ClarificationAgent,
+    CoverageAgent,
     DataLakeExplorerAgent,
     GapAnalysisAgent,
     GapSearchAgent,
@@ -71,6 +72,7 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
             max_applications=int(config.get("max_applications", 5)),
         )
     )
+    final_agents.append(CoverageAgent())
     Orchestrator(final_agents).run(context)
 
     (output_dir / "catalog.json").write_text(
@@ -91,6 +93,9 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
     )
     (output_dir / "gap_evidence.json").write_text(
         json.dumps(context.evidence, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+    )
+    (output_dir / "coverage.json").write_text(
+        json.dumps(context.coverage, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
     )
     (output_dir / "emails.json").write_text(
         json.dumps(context.emails, ensure_ascii=False, indent=2), encoding="utf-8"

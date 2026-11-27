@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -9,7 +10,7 @@ from typing import Any, Callable
 from foerderpilot.llm.client import LLMClient
 from foerderpilot.programs.loader import ProgramValidationError
 from foerderpilot.programs.models import Criterion, FundingProgram
-from foerderpilot.research.backend import SearchBackend, build_fetcher, fetch_text
+from foerderpilot.research.backend import SearchBackend, build_fetcher, build_page_fetcher
 
 LEVELS = ("eu", "bund", "land", "gemeinde")
 
@@ -127,6 +128,7 @@ def research_programs(
     max_per_level: int = 5,
     profile: dict[str, Any] | None = None,
     fetcher: Callable[[str], str] | None = None,
+    page_fetcher: Callable[[str], tuple[str, list[str]]] | None = None,
 ) -> ResearchReport:
     """Recherchiert pro Verwaltungsebene Foerderprogramme und schreibt Draft-Regeln nach out_dir.
 
@@ -145,10 +147,59 @@ def research_programs(
     report = ResearchReport()
     if fetcher is None:
         fetcher = build_fetcher(config)
-    fetch = fetcher
+    link_cfg = research_cfg.get("link_follow") or {}
+    max_depth = int(link_cfg.get("max_depth", 1))
+    max_links = int(link_cfg.get("max_links_per_page", 5))
+    same_host_only = bool(link_cfg.get("same_host_only", True))
+    if page_fetcher is None:
+        if max_depth > 1:
+            page_fetcher = build_page_fetcher(config)
+        else:
+            page_fetcher = lambda url: (fetcher(url), [])  # type: ignore[assignment]
+    visited: set[str] = set()
+
+    def crawl(url: str, depth: int, level: str, topic: str, title: str, counter: list[int]) -> None:
+        """Multi-Hop: Seite lesen, Cards extrahieren, dann verlinkte PDFs/Seiten (gleicher Host) bis max_depth."""
+        if url in visited or depth > max_depth or counter[0] >= max_per_level:
+            return
+        visited.add(url)
+        try:
+            page, links = page_fetcher(url)
+            is_pdf = url.lower().split("?")[0].endswith(".pdf")
+            if len(page) < 200 and not is_pdf:
+                raise ProgramValidationError("Seite zu kurz/leer (ggf. Login oder JS-only)")
+            for card in extract_program_cards(llm, page, url):
+                if counter[0] >= max_per_level:
+                    break
+                program = card_to_program(card, level, url)
+                slug = re.sub(r"[^a-z0-9_-]+", "-", f"{level}-{program.id}".lower()).strip("-")
+                target = out / f"{slug}.json"
+                payload = program.to_dict()
+                payload["status"] = "draft"
+                payload["source_url"] = url
+                payload["researched_level"] = level
+                payload["crawl_depth"] = depth
+                target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                report.drafts.append(target.name)
+                counter[0] += 1
+        except Exception as exc:
+            reason = f"{type(exc).__name__}: {exc}"
+            report.errors.append(f"{level}/{topic} {url}: {reason}")
+            report.manual.append({"url": url, "title": title, "level": level, "reason": reason})
+            return
+        if depth < max_depth:
+            host = urllib.parse.urlparse(url).netloc
+            for link in links[:max_links]:
+                if counter[0] >= max_per_level:
+                    break
+                if same_host_only and urllib.parse.urlparse(link).netloc != host:
+                    continue
+                if not link.lower().split("?")[0].endswith((".pdf", ".html", ".htm", "/")):
+                    continue
+                crawl(link, depth + 1, level, topic, title, counter)
 
     for level in levels:
-        found = 0
+        counter = [0]
         for topic in topics:
             query = build_query(template, level, profile, topic)
             try:
@@ -157,29 +208,10 @@ def research_programs(
                 report.errors.append(f"{level}/{topic}: Suche fehlgeschlagen: {type(exc).__name__}: {exc}")
                 continue
             for result in results:
-                if found >= max_per_level:
+                if counter[0] >= max_per_level:
                     break
-                try:
-                    page = fetch(result.url)
-                    if len(page) < 200:
-                        raise ProgramValidationError("Seite zu kurz/leer (ggf. Login oder JS-only)")
-                    cards = extract_program_cards(llm, page, result.url)
-                    for card in cards:
-                        program = card_to_program(card, level, result.url)
-                        slug = re.sub(r"[^a-z0-9_-]+", "-", f"{level}-{program.id}".lower()).strip("-")
-                        target = out / f"{slug}.json"
-                        payload = program.to_dict()
-                        payload["status"] = "draft"
-                        payload["source_url"] = result.url
-                        payload["researched_level"] = level
-                        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-                        report.drafts.append(target.name)
-                        found += 1
-                except Exception as exc:
-                    reason = f"{type(exc).__name__}: {exc}"
-                    report.errors.append(f"{level}/{topic} {result.url}: {reason}")
-                    report.manual.append({"url": result.url, "title": result.title, "level": level, "reason": reason})
-        report.per_level[level] = found
+                crawl(result.url, 1, level, topic, result.title, counter)
+        report.per_level[level] = counter[0]
     (out / "research-report.json").write_text(
         json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
     )

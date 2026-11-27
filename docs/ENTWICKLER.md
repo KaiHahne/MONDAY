@@ -55,7 +55,8 @@ foerderpilot/
   research/               # backend.py (SearchBackend: static/ddg, fetch_text), agent.py (research_programs -> Drafts)
   sap/                    # runbook.yaml (Rezepte + automation-Blöcke), guide.py (Souffleur), automation.py (Renderer: actions/pad/vba)
   llm/client.py           # LLMClient-Protokoll + OpenAICompatibleClient (env-basiert)
-  agents/                 # base, explorer, matcher, gap, gapsearch, clarification, writer
+  agents/                 # base, explorer, matcher, gap, gapsearch, clarification, writer, coverage
+  util/                   # http.py: HttpFetcher (robots.txt, Retry/Backoff, Crawl-Delay)
   web/                    # server.py (stdlib http.server, Bearer-Token), index.html (mobil)
 programs/                 # Beispiel-Regeln (BAFA, KfW, ZIM) – vom Nutzer gepflegt
 examples/                 # lauffaehiges Data-Lake-Beispiel + Export-Beispiele
@@ -115,6 +116,14 @@ llm_client=…)` injizieren – so machen es auch die Tests (`FakeLLMClient`). F
 `foerderpilot run` reicht es, `FOERDERPILOT_LLM_BASE_URL`/`FOERDERPILOT_LLM_MODEL` zu setzen
 (jeder OpenAI-kompatible `/chat/completions`-Endpoint, z. B. Mistral, vLLM, Ollama).
 
+### CoverageAgent / interne Klärungs-Mail
+`agents/coverage.py` (CoverageAgent, letzter Pipeline-Schritt) schreibt `out/coverage.json`:
+Profil-Felder (referenziert von Programm-Kriterien) mit Status ok/override/offen + Quelle, pro Programm
+Kriterien-/Unterlagen-/Kontakt-Status, Summary. `agents/clarification.py` schreibt neben externen Mails
+(`contact.email`, Anrede mit `contact.stelle`) bei `clarification.internal.email` (env-Referenz) eine interne
+Mail an den Wissensträger (`out/emails/internal-wissenstraeger.md`, Eintrag mit `type: "internal"`).
+Web: `/api/coverage`.
+
 ### Research-Agent erweitern
 `research/agent.py: research_programs()` läuft pro Ebene (`eu/bund/land/gemeinde`) × Topic:
 Suche (`SearchBackend`) → Seite/PDF fetchen (`build_fetcher(config)`) → LLM extrahiert Programm-Cards
@@ -123,7 +132,10 @@ als JSON (`extract_program_cards`) → Draft nach `programs/research/<ebene>-<id
 `research-report.json`. Drafts werden NICHT automatisch gematcht – Review + `mv` nach `programs/`.
 Neues Such-Backend: `SearchBackend`-Protokoll in `research/backend.py` implementieren und in
 `build_backend()` registrieren. HTTP-Hardening (robots.txt, Retry/Backoff, Crawl-Delay, PDF via pypdf)
-liegt in `foerderpilot/util/http.py` (`HttpFetcher`) bzw. `backend.py` (`pdf_to_text`).
+liegt in `foerderpilot/util/http.py` (`HttpFetcher`) bzw. `backend.py` (`pdf_to_text`, `build_page_fetcher`,
+`extract_links`). Multi-Hop: `research.link_follow.max_depth` > 1 crawlt verlinkte PDFs/Seiten (gleicher
+Host) rekursiv mit visited-Set; Drafts bekommen `source_url` + `crawl_depth`. PDFs sind vom
+Mindestlängen-Check ausgenommen.
 Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM (`tests/test_research.py`,
 `tests/test_research_hardening.py` – inkl. echtem Mini-PDF, robots-Block, Retry-500).
 

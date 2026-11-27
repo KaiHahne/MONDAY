@@ -24,9 +24,10 @@ sequenceDiagram
     P->>P: Phase 3 GapAnalysis → gaps.json (fehlende Felder/Unterlagen/kein Kontakt)
     P->>L: Phase 4 GapSearch: gezielte Suche in REST-Quellen → gap_evidence.json, Profil-Update
     P->>P: falls Profil gefüllt: Re-Match + Re-Gap
-    P->>LLM: Phase 5 Clarification (optional): Mail-Entwürfe an contact.email → out/emails/<id>.md + emails.json
+    P->>LLM: Phase 5 Clarification (optional): extern an contact.email (Anrede mit contact.stelle) + intern an Wissensträger → out/emails/<id>.md + internal-wissenstraeger.md + emails.json
     P->>LLM: Phase 6 Writer: Antrags-Entwürfe → out/applications/<id>.md + applications.json
-    P-->>U: out/ (catalog, profile, matches, gaps, gap_evidence, emails, applications, trace)
+    P->>P: Phase 7 Coverage → out/coverage.json (alle Inputs: ok/override/offen, programm- wie unternehmensseitig)
+    P-->>U: out/ (catalog, profile, matches, gaps, gap_evidence, emails, applications, coverage, trace)
     Note over U: Klärungs-Mails manuell prüfen/senden; Anträge reviewen
 ```
 
@@ -35,7 +36,7 @@ sequenceDiagram
 | # | Schritt | Befehl | Inputs (Voraussetzungen) | Outputs |
 |---|---|---|---|---|
 | 0 | Setup | `pip install -e ".[all,test]"` | Python ≥3.10; Env: `FOERDERPILOT_LLM_API_KEY` (+ `…_BASE_URL`/`…_MODEL`), `FOERDERPILOT_WEB_TOKEN` (serve), Connector-Creds als Env (`env:`-Referenzen) | – |
-| 1 | Research Förderprogramme | `foerderpilot research --config C [--levels …] [--max-per-level N] [--use-lake-profile]` | `config.research` (backend `ddg`/`static`, levels, topics, query_template, sources); LLM-Key; optional Profil aus Lake | `programs/research/<ebene>-<id>.json` (Drafts mit criteria/contact/funding/source_url) + `research-report.json` |
+| 1 | Research Förderprogramme (+Multi-Hop) | `foerderpilot research --config C [--levels …] [--max-per-level N] [--use-lake-profile]` | `config.research` (backend, levels, topics, query_template, sources, `link_follow.max_depth` für verlinkte PDFs/Seiten, robots/crawl/retry, PDF via `foerderpilot[pdf]`); LLM-Key | `programs/research/<ebene>-<id>.json` (Drafts mit criteria/contact/funding/`source_url`/`crawl_depth`) + `research-report.json` (inkl. `manual`-Liste) |
 | 1b | Review + Freigabe | manuell: `mv programs/research/x.json programs/` | Mensch prüft Kriterien/Formalismen/Kontakt | aktive Regel in `programs/` |
 | 1c | Import statt Research | `foerderpilot import-programs --input export.csv --out programs/ [--mapping M] [--force] [--dry-run]` | CSV/JSON-Export (Spalten-Aliase DE/EN, Kriterien-Syntax `field op value \| required=false \| weight=3`) | `programs/<id>.json` + JSON-Report (written/skipped/errors) |
 | 2 | Manuelle SAP-Extraktion (Souffleur) | `foerderpilot sap-guide --goal "…" [--domain co\|bw\|…] [--batch] [--emit actions\|pad\|vba --out …]` | Runbook `foerderpilot/sap/runbook.yaml` (+ `automation:`-Blöcke); SAP-Zugang des Nutzers | Anleitung / PAD-Flow / VBA-Makro; Downloads landen in `<local-root>/sap_exports/` |
@@ -68,4 +69,5 @@ sequenceDiagram
 | `emails.json` + `emails/*.md` | Klärungs-Mail-Entwürfe an die recherchierte Stelle |
 | `applications.json` + `applications/*.md` | fertige Antragsentwürfe (LLM) |
 | `trace.json` | Audit-Trace aller Agenten |
+| `coverage.json` | Coverage-Report: offene vs. identifizierte Inputs beider Seiten (Programmkriterien, Unterlagen, Kontakt, Profil-Felder) |
 | `programs/research/*.json` + `research-report.json` | Research-Drafts (vor Review) |

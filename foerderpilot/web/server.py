@@ -128,6 +128,8 @@ class WebHandler(BaseHTTPRequestHandler):
             self._read_out("gaps.json")
         elif path == "/api/evidence":
             self._read_out("gap_evidence.json")
+        elif path == "/api/coverage":
+            self._read_out("coverage.json")
         elif path == "/api/emails":
             self._read_out("emails.json")
         elif path == "/api/trace":

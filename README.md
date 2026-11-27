@@ -14,8 +14,9 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
 | `DataLakeExplorer` | Erkundet alle konfigurierten Data Lakes, baut den Datenkatalog und destilliert das Unternehmensprofil (Stammdaten- + Kennzahlentabellen, DE/EN-Spalten, Key-Value-Tabellen). |
 | `ProgramMatcher` | Lädt Förderprogramme als JSON/YAML-Regeln (`programs/`) und matcht sie gegen das Profil: Eligibility (alle `required`-Kriterien) + gewichteter Score, absteigend gerankt. |
 | `GapAnalysis` | Ermittelt pro Match Informationslücken: fehlende/fehlgeschlagene Profil-Felder, nicht auffindbare Pflicht-Unterlagen im Lake, fehlender Ansprechpartner (`contact`). |
-| `Clarification` | Formuliert per LLM für eligible Matches mit Lücken eine Klärungs-Mail an die recherchierte Stelle (`contact.email`) → `out/emails/<id>.md` (Entwurf, nicht automatisch gesendet). |
+| `Clarification` | Formuliert per LLM zweiseitig Klärungs-Mails: **extern** an die recherchierte Stelle (`contact.email`, Anrede mit `contact.stelle`) und **intern** an den Wissensträger (`clarification.internal.email`) für fehlende Unternehmensdaten → `out/emails/*.md` (Entwürfe, nie automatisch gesendet). |
 | `ApplicationWriter` | Erstellt per LLM für die besten eligible Matches fertige Antragsentwürfe unter `out/applications/<programm-id>.md`. |
+| `Coverage` | Schreibt `out/coverage.json`: welche Inputs beider Seiten identifiziert sind (`ok`/`override`) und welche noch `offen` (Programmkriterien, Unterlagen, Kontakt, Profil-Felder). |
 | `Orchestrator` | Koordiniert die Agenten und zeichnet den Trace. |
 
 ## Workflow: Research → Match → Klärung
@@ -37,10 +38,11 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
    Quellen, die nicht automatisch lesbar sind (Login-Wall, JS-only, leere PDFs), landen als **`manual`-Liste**
    im `research-report.json` zum manuellen Nachtragen als Draft.
 2. **Match gegen die proprietären Systeme** – `foerderpilot run` (Explorer liest Data Lake / SQL / S3, Matcher gegen `programs/`).
-3. **Lücken → Klärungs-Mail** – `GapAnalysis` schreibt `out/gaps.json`, `Clarification` formuliert Mail-Entwürfe
-   an die jeweilige Stelle nach `out/emails/<id>.md` (An/Betreff/Text). Abschaltbar: `clarification: {enabled: false}`.
-   In der Web-UI (`foerderpilot serve`) sind Lücken und Mail-Entwürfe unter „Luecken & Klaerungs-Mails“ sichtbar
-   (`/api/gaps`, `/api/emails`, `/api/emails/<id>`). |
+3. **Lücken → Klärungs-Mail (zweiseitig)** – `GapAnalysis` schreibt `out/gaps.json`, `Clarification` formuliert
+   Mail-Entwürfe: extern an die Förderstelle (`out/emails/<id>.md`) und intern an den Wissensträger
+   (`out/emails/internal-wissenstraeger.md`). Abschaltbar: `clarification: {enabled: false}`.
+   `Coverage` schreibt `out/coverage.json` (offen vs. identifiziert). In der Web-UI (`foerderpilot serve`)
+   sichtbar unter „Luecken & Klaerungs-Mails“ (`/api/gaps`, `/api/evidence`, `/api/coverage`, `/api/emails`, `/api/emails/<id>`). |
 
 ## Data-Lake-Connectoren
 
@@ -187,6 +189,9 @@ Ausgabe in `out/`:
 - `profile.json` – extrahiertes Unternehmensprofil + Quellen
 - `matches.json` – alle Programme mit Eligibility, Score und erfüllten/fehlenden Kriterien
 - `applications/<programm-id>.md` – fertige Antragsentwürfe (LLM)
+- `gaps.json`, `gap_evidence.json` – Lücken + Treffer aus proprietären Quellen
+- `emails.json`, `emails/*.md` – Klärungs-Mail-Entwürfe (extern Förderstelle, intern Wissensträger)
+- `coverage.json` – Coverage-Report: alle Inputs beider Seiten mit Status ok/override/offen
 - `applications.json`, `trace.json` – Übersicht + Audit-Trace
 
 ## Web-UI (auch mobil, z. B. iPhone/Safari)

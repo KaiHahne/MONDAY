@@ -111,6 +111,17 @@ async function loadGaps() {
       html += '<br><span class="muted">Evidence aus proprietären Quellen: ' + n + ' Treffer</span>';
     }
   } catch (e) {}
+  try {
+    const cr = await api('/api/coverage');
+    if (cr.ok) {
+      const cov = await cr.json();
+      const s = cov.summary || {};
+      html += '<br><span class="muted">Coverage: ' + (s.open_fields || []).length + ' offene Felder, '
+        + (s.open_documents || []).length + ' offene Unterlagen, '
+        + (s.programs_without_contact || []).length + ' Programme ohne Kontakt, '
+        + s.programs_eligible + '/' + s.programs_total + ' eligible</span>';
+    }
+  } catch (e) {}
   document.getElementById('gaps').innerHTML = html;
 }
 async function loadMails() {

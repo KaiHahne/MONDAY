@@ -58,11 +58,21 @@ profile_overrides:
 #   # Extra installieren: pip install foerderpilot[pdf]
 #   # Quellen, die nicht automatisch lesbar sind (Login/JS/leer), landen als
 #   # 'manual'-Liste im research-report.json zum manuellen Nachtragen.
+#   # Multi-Hop: verlinkte PDFs/Seiten (gleicher Host) werden mitgecrawlt
+#   link_follow:
+#     max_depth: 2            # 1 = nur Suchergebnis-Seite (Default)
+#     max_links_per_page: 5
+#     same_host_only: true
 
-# Klaerungs-Mails an recherchierte Ansprechpartner bei Luecken (Default: an, max. 3 Mails)
+# Klaerungs-Mails bei Luecken (Default: an, max. 3 externe Mails)
 # clarification:
 #   enabled: true
 #   max_emails: 3
+#   # interne Mail an den Wissensträger (Abteilung) fuer fehlende Unternehmensdaten:
+#   internal:
+#     enabled: true
+#     email: env:FOERDERPILOT_INTERNAL_CONTACT   # z. B. foerderteam@firma.de
+#     abteilung: "Controlling / Fördermanagement"
 
 # Proprietäre Systeme als REST-Quellen (GapSearchAgent durchsucht sie nach Luecken).
 # Secrets nur als env:VAR_NAME – Token landen nie in dieser Datei.

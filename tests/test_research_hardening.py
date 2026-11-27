@@ -38,11 +38,25 @@ def make_pdf(text: str) -> bytes:
 
 
 class HardeningHandler(BaseHTTPRequestHandler):
-    state = {"hits": 0}
+    state = {"hits": 0, "root_hits": 0}
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path == "/robots.txt":
+        if path == "/":
+            HardeningHandler.state["root_hits"] += 1
+            body = (
+                b'<html><body><h1>Uebersicht</h1><p>'
+                + b"Foerderprogramme Uebersicht mit Link zur Richtlinie. " * 5
+                + b'</p><a href="/b.pdf">Richtlinie als PDF</a></body></html>'
+            )
+            ctype = "text/html"
+        elif path == "/b.pdf":
+            body = make_pdf(
+                "Foerderprogramm ABC der Behoerde. Stelle: Amt XYZ, kontakt@amt.example. "
+                "Voraussetzung: bis 250 Mitarbeiter, Sitz in Deutschland, Zuschuss bis 50 Prozent."
+            )
+            ctype = "application/pdf"
+        elif path == "/robots.txt":
             body = b"User-agent: *\nDisallow: /private\n"
             ctype = "text/plain"
         elif path == "/private/doc":
@@ -131,6 +145,51 @@ def test_crawl_delay(server):
 class FakeLLM:
     def complete(self, system, prompt, *, temperature=0.2, max_tokens=4000):
         return json.dumps({"programs": []})
+
+
+class FakeLLMCard:
+    def complete(self, system, prompt, *, temperature=0.2, max_tokens=4000):
+        is_pdf = "/b.pdf" in prompt
+        return json.dumps(
+            {
+                "programs": [
+                    {
+                        "id": "pdf-programm" if is_pdf else "html-programm",
+                        "name": "PDF Programm" if is_pdf else "HTML Programm",
+                        "provider": "Amt XYZ",
+                        "contact": {"stelle": "Amt XYZ", "email": "kontakt@amt.example"},
+                        "criteria": [{"field": "employees", "op": "<=", "value": 250}],
+                    }
+                ]
+            }
+        )
+
+
+def test_research_multihop_follows_pdf_link(server, tmp_path):
+    HardeningHandler.state["root_hits"] = 0
+    cfg = {
+        "research": {
+            "backend": "static",
+            "levels": ["bund"],
+            "topics": ["X"],
+            "respect_robots": False,
+            "crawl_delay": 0,
+            "link_follow": {"max_depth": 2, "same_host_only": True, "max_links_per_page": 5},
+            "sources": [{"query": "Foerderprogramme X", "results": [{"title": "Uebersicht", "url": f"{server}/"}]}],
+        }
+    }
+    report = research_programs(
+        cfg,
+        llm=FakeLLMCard(),
+        search_backend=StaticBackend(cfg["research"]["sources"]),
+        out_dir=tmp_path / "research",
+    )
+    assert report.errors == [], report.errors
+    drafts = [json.loads((tmp_path / "research" / name).read_text(encoding="utf-8")) for name in report.drafts]
+    assert drafts
+    assert any(d["source_url"].endswith("/b.pdf") and d.get("crawl_depth") == 2 for d in drafts)
+    assert any(d["source_url"].endswith("/") and d.get("crawl_depth") == 1 for d in drafts)
+    assert HardeningHandler.state["root_hits"] == 1  # visited-Set verhindert Doppel-Abruf
 
 
 def test_research_manual_fallback_list(server, tmp_path):

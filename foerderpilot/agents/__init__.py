@@ -1,5 +1,6 @@
 from foerderpilot.agents.base import Agent, AgentContext
 from foerderpilot.agents.clarification import ClarificationAgent
+from foerderpilot.agents.coverage import CoverageAgent
 from foerderpilot.agents.explorer import DataLakeExplorerAgent
 from foerderpilot.agents.gap import GapAnalysisAgent
 from foerderpilot.agents.gapsearch import GapSearchAgent
@@ -10,6 +11,7 @@ __all__ = [
     "Agent",
     "AgentContext",
     "ClarificationAgent",
+    "CoverageAgent",
     "DataLakeExplorerAgent",
     "GapAnalysisAgent",
     "GapSearchAgent",
