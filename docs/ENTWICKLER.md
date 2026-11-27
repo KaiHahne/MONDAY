@@ -117,12 +117,15 @@ llm_client=…)` injizieren – so machen es auch die Tests (`FakeLLMClient`). F
 
 ### Research-Agent erweitern
 `research/agent.py: research_programs()` läuft pro Ebene (`eu/bund/land/gemeinde`) × Topic:
-Suche (`SearchBackend`) → Seite fetchen (`fetch_text`) → LLM extrahiert Programm-Cards als JSON
-(`extract_program_cards`) → Draft nach `programs/research/<ebene>-<id>.json` mit `status: "draft"`,
-`source_url`, `contact`. Drafts werden NICHT automatisch gematcht – Review + `mv` nach `programs/`.
+Suche (`SearchBackend`) → Seite/PDF fetchen (`build_fetcher(config)`) → LLM extrahiert Programm-Cards
+als JSON (`extract_program_cards`) → Draft nach `programs/research/<ebene>-<id>.json` mit `status: "draft"`,
+`source_url`, `contact`. Nicht automatisch lesbare Quellen (Login/JS/leer) landen als `manual`-Liste im
+`research-report.json`. Drafts werden NICHT automatisch gematcht – Review + `mv` nach `programs/`.
 Neues Such-Backend: `SearchBackend`-Protokoll in `research/backend.py` implementieren und in
-`build_backend()` registrieren. Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM
-(siehe `tests/test_research.py`).
+`build_backend()` registrieren. HTTP-Hardening (robots.txt, Retry/Backoff, Crawl-Delay, PDF via pypdf)
+liegt in `foerderpilot/util/http.py` (`HttpFetcher`) bzw. `backend.py` (`pdf_to_text`).
+Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM (`tests/test_research.py`,
+`tests/test_research_hardening.py` – inkl. echtem Mini-PDF, robots-Block, Retry-500).
 
 ### Proprietäre Quelle (REST) hinzufügen
 Preset in `connectors/presets.py` anlegen (auth-Scheme, datasets/search-Pfade mit `{q}`/`{limit}`,

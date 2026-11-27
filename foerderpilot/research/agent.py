@@ -9,7 +9,7 @@ from typing import Any, Callable
 from foerderpilot.llm.client import LLMClient
 from foerderpilot.programs.loader import ProgramValidationError
 from foerderpilot.programs.models import Criterion, FundingProgram
-from foerderpilot.research.backend import SearchBackend, fetch_text
+from foerderpilot.research.backend import SearchBackend, build_fetcher, fetch_text
 
 LEVELS = ("eu", "bund", "land", "gemeinde")
 
@@ -37,12 +37,16 @@ class ResearchReport:
     drafts: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     per_level: dict[str, int] = field(default_factory=dict)
+    manual: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "drafts": self.drafts,
             "errors": self.errors,
             "per_level": self.per_level,
+            "manual": self.manual,
+            "manual_hint": "Eintraege unter 'manual' konnten nicht automatisch gelesen werden "
+            "(Login/JS/leeres PDF) – bitte manuell oeffnen und als Draft in programs/research/ nachtragen.",
         }
 
 
@@ -118,11 +122,11 @@ def research_programs(
     config: dict[str, Any],
     llm: LLMClient,
     search_backend: SearchBackend,
-    fetcher: Callable[[str], str] = fetch_text,
     out_dir: str | Path = "programs/research",
     levels: list[str] | None = None,
     max_per_level: int = 5,
     profile: dict[str, Any] | None = None,
+    fetcher: Callable[[str], str] | None = None,
 ) -> ResearchReport:
     """Recherchiert pro Verwaltungsebene Foerderprogramme und schreibt Draft-Regeln nach out_dir.
 
@@ -139,6 +143,9 @@ def research_programs(
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     report = ResearchReport()
+    if fetcher is None:
+        fetcher = build_fetcher(config)
+    fetch = fetcher
 
     for level in levels:
         found = 0
@@ -153,9 +160,9 @@ def research_programs(
                 if found >= max_per_level:
                     break
                 try:
-                    page = fetcher(result.url)
+                    page = fetch(result.url)
                     if len(page) < 200:
-                        raise ProgramValidationError("Seite zu kurz/leer")
+                        raise ProgramValidationError("Seite zu kurz/leer (ggf. Login oder JS-only)")
                     cards = extract_program_cards(llm, page, result.url)
                     for card in cards:
                         program = card_to_program(card, level, result.url)
@@ -169,7 +176,9 @@ def research_programs(
                         report.drafts.append(target.name)
                         found += 1
                 except Exception as exc:
-                    report.errors.append(f"{level}/{topic} {result.url}: {type(exc).__name__}: {exc}")
+                    reason = f"{type(exc).__name__}: {exc}"
+                    report.errors.append(f"{level}/{topic} {result.url}: {reason}")
+                    report.manual.append({"url": result.url, "title": result.title, "level": level, "reason": reason})
         report.per_level[level] = found
     (out / "research-report.json").write_text(
         json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"

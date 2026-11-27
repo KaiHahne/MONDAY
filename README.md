@@ -29,6 +29,13 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
    Ergebnis: Drafts in `programs/research/<ebene>-<id>.json` inkl. `contact` (Stelle/E-Mail), `criteria`,
    `required_documents`, `funding`, `source_url`, `status: "draft"` + `research-report.json`.
    **Menschliches Review, dann verschieben:** `mv programs/research/bund-xyz.json programs/` – erst dann matcht die Pipeline das Programm.
+
+   **Hardening beim Research** (keine Behörden-API nötig – Webseiten/PDFs werden gelesen):
+   PDFs (Merkblätter/Richtlinien) werden automatisch als Text extrahiert (`pip install foerderpilot[pdf]`);
+   `robots.txt` wird respektiert, Retry/Backoff bei 429/5xx, Crawl-Delay pro Host (alles in `config.research`
+   konfigurierbar: `respect_robots`, `crawl_delay`, `max_retries`, `backoff_base`, `user_agent`).
+   Quellen, die nicht automatisch lesbar sind (Login-Wall, JS-only, leere PDFs), landen als **`manual`-Liste**
+   im `research-report.json` zum manuellen Nachtragen als Draft.
 2. **Match gegen die proprietären Systeme** – `foerderpilot run` (Explorer liest Data Lake / SQL / S3, Matcher gegen `programs/`).
 3. **Lücken → Klärungs-Mail** – `GapAnalysis` schreibt `out/gaps.json`, `Clarification` formuliert Mail-Entwürfe
    an die jeweilige Stelle nach `out/emails/<id>.md` (An/Betreff/Text). Abschaltbar: `clarification: {enabled: false}`.

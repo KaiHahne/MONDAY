@@ -46,6 +46,18 @@ profile_overrides:
 #   sources:                # nur fuer backend: static (Tests/Offline)
 #     - query: "Foerderprogramme Energie"
 #       results: [{title: "BAFA EBM", url: "https://www.bafa.de/...", snippet: "..."}]
+#   # Hardening beim Crawlen (Default-Werte shown):
+#   respect_robots: true    # robots.txt pro Host respektieren
+#   crawl_delay: 1.0        # Sekunden zwischen Requests pro Host
+#   max_retries: 2          # Retries bei 429/5xx mit Backoff (backoff_base * 2^attempt)
+#   backoff_base: 1.0
+#   timeout: 30
+#   max_chars: 20000        # Text-Laenge pro Seite fuer die LLM-Extraktion
+#   user_agent: "foerderpilot-research/0.1 (+kontakt)"
+#   # PDFs (Merkblaetter/Richtlinien) werden automatisch als Text extrahiert:
+#   # Extra installieren: pip install foerderpilot[pdf]
+#   # Quellen, die nicht automatisch lesbar sind (Login/JS/leer), landen als
+#   # 'manual'-Liste im research-report.json zum manuellen Nachtragen.
 
 # Klaerungs-Mails an recherchierte Ansprechpartner bei Luecken (Default: an, max. 3 Mails)
 # clarification:
