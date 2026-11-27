@@ -10,6 +10,7 @@ from foerderpilot.agents import (
     ClarificationAgent,
     DataLakeExplorerAgent,
     GapAnalysisAgent,
+    GapSearchAgent,
     ProgramMatcherAgent,
 )
 from foerderpilot.llm.client import LLMClient, OpenAICompatibleClient
@@ -44,27 +45,33 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
         llm_client = OpenAICompatibleClient.from_env()
 
     clarification_cfg = config.get("clarification") or {}
-    agents: list = [
-        DataLakeExplorerAgent(),
-        ProgramMatcherAgent(),
-        GapAnalysisAgent(),
-    ]
+    context = AgentContext(config)
+
+    # Phase 1: Lake erkunden, matchen, Luecken finden
+    Orchestrator([DataLakeExplorerAgent(), ProgramMatcherAgent(), GapAnalysisAgent()]).run(context)
+    # Phase 2: Luecken agentisch in proprietären Quellen suchen; Profil ggf. nachfuellen
+    Orchestrator([GapSearchAgent()]).run(context)
+    # Phase 3: bei nachgefuelltem Profil neu matchen und Luecken aktualisieren
+    if context.profile_changed:
+        Orchestrator([ProgramMatcherAgent(), GapAnalysisAgent()]).run(context)
+    # Phase 4: Klaerungs-Mails + Antraege
+    final_agents: list = []
     if clarification_cfg.get("enabled", True):
-        agents.append(
+        final_agents.append(
             ClarificationAgent(
                 llm=llm_client,
                 output_dir=output_dir,
                 max_emails=int(clarification_cfg.get("max_emails", 3)),
             )
         )
-    agents.append(
+    final_agents.append(
         ApplicationWriterAgent(
             llm=llm_client,
             output_dir=output_dir,
             max_applications=int(config.get("max_applications", 5)),
         )
     )
-    context = Orchestrator(agents).run(AgentContext(config))
+    Orchestrator(final_agents).run(context)
 
     (output_dir / "catalog.json").write_text(
         json.dumps(context.catalog.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
@@ -81,6 +88,9 @@ def run_pipeline(config: dict[str, Any], llm_client: LLMClient | None = None) ->
     )
     (output_dir / "gaps.json").write_text(
         json.dumps(context.gaps, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+    )
+    (output_dir / "gap_evidence.json").write_text(
+        json.dumps(context.evidence, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
     )
     (output_dir / "emails.json").write_text(
         json.dumps(context.emails, ensure_ascii=False, indent=2), encoding="utf-8"

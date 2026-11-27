@@ -51,3 +51,31 @@ profile_overrides:
 # clarification:
 #   enabled: true
 #   max_emails: 3
+
+# Proprietäre Systeme als REST-Quellen (GapSearchAgent durchsucht sie nach Luecken).
+# Secrets nur als env:VAR_NAME – Token landen nie in dieser Datei.
+# connectors:
+#   - type: sql                       # SAP HANA / Databricks Warehouse / Planisware-DB
+#     name: sap_hana
+#     url: env:FOERDERPILOT_HANA_URL
+#   - type: rest                      # Jira
+#     name: jira
+#     preset: jira
+#     base_url: env:JIRA_BASE_URL
+#     auth: {scheme: basic, user: env:JIRA_USER, password: env:JIRA_TOKEN}
+#   - type: rest                      # Outlook/M365 via Microsoft Graph
+#     name: outlook
+#     preset: graph
+#     auth: {scheme: bearer, token: env:GRAPH_TOKEN}
+#   - type: rest                      # Power BI
+#     name: powerbi
+#     preset: powerbi
+#     auth: {scheme: bearer, token: env:POWERBI_TOKEN}
+#   - type: rest                      # Polarion/Planisware/Hebbia/Facton/Serdia/... generisch
+#     name: polarion
+#     preset: generic
+#     base_url: env:POLARION_BASE_URL
+#     auth: {scheme: bearer, token: env:POLARION_TOKEN}
+#     datasets_path: /rest/v1/projects/{project}/workitems
+#     search_path: /rest/v1/workitems?query={q}
+# Presets: jira, graph, powerbi, databricks, generic (siehe foerderpilot/connectors/presets.py)

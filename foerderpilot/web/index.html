@@ -100,9 +100,18 @@ async function loadDoc(id) {
 async function loadGaps() {
   const r = await api('/api/gaps'); if (!r.ok) return; const g = await r.json();
   const entries = Object.entries(g);
-  document.getElementById('gaps').innerHTML = entries.length
+  let html = entries.length
     ? entries.map(([pid, list]) => '<b>' + pid + '</b> (' + list.length + ' Luecken): ' + list.map(x => x.type + (x.field ? ' – ' + x.field : '')).join('; ')).join('<br>')
     : 'keine Luecken gefunden';
+  try {
+    const er = await api('/api/evidence');
+    if (er.ok) {
+      const ev = await er.json();
+      const n = Object.values(ev).reduce((a, v) => a + v.length, 0);
+      html += '<br><span class="muted">Evidence aus proprietären Quellen: ' + n + ' Treffer</span>';
+    }
+  } catch (e) {}
+  document.getElementById('gaps').innerHTML = html;
 }
 async function loadMails() {
   const r = await api('/api/emails'); if (!r.ok) return; const ms = await r.json();

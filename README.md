@@ -39,6 +39,49 @@ Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wir
 - **SQL**: beliebige Datenbank via SQLAlchemy (`pip install foerderpilot[sql]`)
 - **S3**: S3-kompatible Object Stores inkl. MinIO (`pip install foerderpilot[s3]`); Credentials nur aus der Umgebung (`AWS_*` bzw. `FOERDERPILOT_S3_*`)
 
+## Proprietäre Unternehmensquellen (agentische Lückensuche)
+
+Neben Data Lakes (lokal/SQL/S3) können **proprietäre Systeme** als Connector vom Typ `rest`
+angebunden werden. Der `GapSearchAgent` durchsucht sie nach den Lücken aus `gaps.json`
+(fehlende Profil-Felder, fehlende Unterlagen), trägt gefundene Werte ins Profil ein
+(`out/gap_evidence.json` protokolliert jeden Treffer mit Quelle/URL), und die Pipeline
+matcht danach erneut.
+
+| System | Anbindung | Auth (nur Env, nie in Config) |
+|---|---|---|
+| **SAP HANA** (ERP) | `type: sql` mit `url: env:FOERDERPILOT_HANA_URL` (`hana+hdbcli://...`, Extra: `pip install hdbcli`) | DB-User/Pass in der URL-Env |
+| **Databricks** | `type: sql` (`databricks+connector://...` am SQL Warehouse) oder `preset: databricks` (REST-Übersicht) | Env |
+| **Jira** | `preset: jira` | `env:JIRA_USER` + `env:JIRA_TOKEN` (Basic) |
+| **Outlook / M365** | `preset: graph` (Microsoft Graph `/me/messages`) | `env:GRAPH_TOKEN` (Bearer) |
+| **Power BI** | `preset: powerbi` | `env:POWERBI_TOKEN` (Bearer, Azure AD) |
+| **Polarion, Planisware (OPX), Hebbia, Facton, Serdia, eigene SaaS** | `preset: generic` + eigene Pfade in der Config (`datasets_path`, `search_path` mit `{q}`/`{limit}`) | `env:…` (Bearer/Basic) |
+
+```yaml
+connectors:
+  - type: sql
+    name: sap_hana
+    url: env:FOERDERPILOT_HANA_URL
+  - type: rest
+    name: jira
+    preset: jira
+    base_url: env:JIRA_BASE_URL
+    auth: {scheme: basic, user: env:JIRA_USER, password: env:JIRA_TOKEN}
+  - type: rest
+    name: outlook
+    preset: graph
+    auth: {scheme: bearer, token: env:GRAPH_TOKEN}
+  - type: rest
+    name: polarion
+    preset: generic
+    base_url: env:POLARION_BASE_URL
+    auth: {scheme: bearer, token: env:POLARION_TOKEN}
+    datasets_path: /rest/v1/projects/{project}/workitems
+    search_path: /rest/v1/workitems?query={q}
+```
+
+Alle REST-Connectoren landen automatisch im Katalog (Profil-Extraktion läuft auch über sie)
+und stehen dem `GapSearchAgent` per `search()` zur Verfügung. Token landen nie in Logs/Outputs.
+
 ## Förderprogramm-Regeln
 
 Programme sind maschinenlesbare JSON/YAML-Definitionen (siehe `programs/`):

@@ -46,7 +46,7 @@ foerderpilot/
   orchestrator.py         # führt Agenten sequenziell aus, Trace
   catalog.py              # DataCatalog: Datasets + Schema-Probe pro Connector
   profile.py              # Profil-Extraktion (FIELD_ALIASES, KV-Tabellen, DE/EN-Zahlen)
-  connectors/             # base (Protocol + DatasetRef), local, sql, s3, factory
+  connectors/             # base (Protocol + DatasetRef), local, sql, s3, rest (Presets), factory, presets.py
   programs/
     models.py             # FundingProgram (inkl. contact), Criterion (validate())
     loader.py             # JSON/YAML laden + validieren (ProgramValidationError)
@@ -54,7 +54,7 @@ foerderpilot/
     importer.py           # CSV/JSON-Export -> programs/<id>.json (import-programs)
   research/               # backend.py (SearchBackend: static/ddg, fetch_text), agent.py (research_programs -> Drafts)
   llm/client.py           # LLMClient-Protokoll + OpenAICompatibleClient (env-basiert)
-  agents/                 # base, explorer, matcher, gap, clarification, writer
+  agents/                 # base, explorer, matcher, gap, gapsearch, clarification, writer
   web/                    # server.py (stdlib http.server, Bearer-Token), index.html (mobil)
 programs/                 # Beispiel-Regeln (BAFA, KfW, ZIM) – vom Nutzer gepflegt
 examples/                 # lauffaehiges Data-Lake-Beispiel + Export-Beispiele
@@ -122,6 +122,19 @@ Suche (`SearchBackend`) → Seite fetchen (`fetch_text`) → LLM extrahiert Prog
 Neues Such-Backend: `SearchBackend`-Protokoll in `research/backend.py` implementieren und in
 `build_backend()` registrieren. Tests: `StaticBackend` + Loopback-HTTP-Server + FakeLLM
 (siehe `tests/test_research.py`).
+
+### Proprietäre Quelle (REST) hinzufügen
+Preset in `connectors/presets.py` anlegen (auth-Scheme, datasets/search-Pfade mit `{q}`/`{limit}`,
+Item-Mapping als Dotted Paths) oder `preset: generic` mit eigenen Pfaden in der Config nutzen.
+SAP HANA / Databricks-SQL-Warehouses / Planisware-DB gehen über den bestehenden `sql`-Connector
+(`hana+hdbcli://…`, `databricks+connector://…`). Auth immer `env:VAR` – `_resolve_secret` in
+`factory.py` löst zur Laufzeit auf. Tests mit Loopback-Fake-Server (siehe `tests/test_proprietary.py`).
+
+### GapSearchAgent erweitern
+`agents/gapsearch.py`: Wunschliste = Lücken aus `GapAnalysis` (Felder + Dokumente), pro Quelle
+`search()` mit Feld-Aliasen, Werte per `extract_value()` (Regex `alias: wert`) ins Profil eintragen,
+Evidence nach `context.evidence` → `out/gap_evidence.json`. Danach re-matched die Pipeline automatisch
+(siehe Phasen in `pipeline.run_pipeline`).
 
 ### Web-API erweitern
 Neuer Endpunkt = weiterer `elif`-Zweig in `web/server.py: WebHandler.do_GET/do_POST`

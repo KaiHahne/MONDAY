@@ -17,12 +17,34 @@ def _resolve_secret(value: str) -> str:
     return value
 
 
+def _resolve_auth(auth: Any) -> dict[str, str] | None:
+    if not isinstance(auth, dict):
+        return None
+    resolved = {}
+    for key, value in auth.items():
+        resolved[key] = _resolve_secret(value) if isinstance(value, str) else value
+    return resolved
+
+
 def build_connectors(configs: list[dict[str, Any]]) -> list[DataLakeConnector]:
     """Erzeugt Connector-Instanzen aus der Config-Liste."""
     connectors: list[DataLakeConnector] = []
     for cfg in configs:
         cfg = dict(cfg)
         ctype = cfg.pop("type", None)
+        if ctype == "rest":
+            from foerderpilot.connectors.rest import RestConnector
+
+            connectors.append(
+                RestConnector(
+                    name=cfg.pop("name", cfg.get("preset", "rest")),
+                    preset=cfg.pop("preset", "generic"),
+                    base_url=_resolve_secret(cfg.pop("base_url", "") or ""),
+                    auth=_resolve_auth(cfg.pop("auth", None)),
+                    params=cfg,
+                )
+            )
+            continue
         if ctype == "local":
             from foerderpilot.connectors.local import LocalFileConnector
 

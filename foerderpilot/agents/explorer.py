@@ -15,6 +15,7 @@ class DataLakeExplorerAgent(Agent):
     def run(self, context: AgentContext) -> None:
         cfg = context.config
         connectors = build_connectors(cfg.get("connectors", []))
+        context.connectors = connectors
         context.log(self.name, "connect", f"{len(connectors)} Connector konfiguriert: {[c.name for c in connectors]}")
 
         catalog = DataCatalog(sample_rows=int(cfg.get("sample_rows", 5))).build(connectors)

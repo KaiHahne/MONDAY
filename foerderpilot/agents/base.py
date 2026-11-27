@@ -27,11 +27,14 @@ class AgentContext:
 
     def __init__(self, config: dict[str, Any]):
         self.config = config
+        self.connectors: list[Any] = []
         self.catalog: Any = None
         self.profile: dict[str, Any] = {}
         self.programs: list[Any] = []
         self.matches: list[Any] = []
         self.gaps: dict[str, list[dict[str, Any]]] = {}
+        self.evidence: dict[str, list[dict[str, Any]]] = {}
+        self.profile_changed: bool = False
         self.applications: list[dict[str, Any]] = []
         self.emails: list[dict[str, Any]] = []
         self.events: list[AgentEvent] = []
