@@ -3,6 +3,8 @@
 Multi-Agent-Tool, das die **Data Lakes eines Unternehmens** durchsucht, das passende
 **Förderprogramm** per Regel-Engine findet und daraus **Förderanträge** (Markdown-Entwürfe) erstellt.
 
+**Gesamtsequenz inkl. Research & Input/Output pro Schritt:** [docs/WORKFLOW.md](docs/WORKFLOW.md) (Sequenzdiagramm + Schritt-Tabelle). Entwickler-Doku: [docs/ENTWICKLER.md](docs/ENTWICKLER.md).
+
 ## Architektur
 
 Vier Agenten laufen sequenziell über einen geteilten Kontext (jeder Schritt wird in `out/trace.json` auditiert):
